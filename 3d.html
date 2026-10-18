@@ -1,0 +1,2504 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>금고 해독기: 일본어 숫자 & 계산기 퍼즐 (金庫解読 / Kinko Vault)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js r128 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Google Fonts: Inter, Noto Sans KR, Noto Sans JP, JetBrains Mono, Shippori Mincho -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Sans+KR:wght@400;500;700;900&family=Shippori+Mincho:wght@600;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans KR', 'Noto Sans JP', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                        serifJp: ['Shippori Mincho', 'Noto Sans JP', 'serif']
+                    },
+                    colors: {
+                        vault: {
+                            950: '#090d16',
+                            900: '#0f172a',
+                            800: '#1e293b',
+                            700: '#334155',
+                            gold: '#f59e0b',
+                            emerald: '#10b981',
+                            crimson: '#ef4444'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            background: radial-gradient(circle at 50% 0%, #1e293b 0%, #090d16 75%);
+            color: #f8fafc;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        /* Physical Keypad Button Styling */
+        .keypad-btn {
+            position: relative;
+            background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+            border: 1px solid #475569;
+            box-shadow: 0 5px 0 #0f172a, 0 8px 15px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.15);
+            transition: all 0.08s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .keypad-btn:hover {
+            background: linear-gradient(180deg, #3e4f66 0%, #253348 100%);
+            border-color: #64748b;
+        }
+        .keypad-btn:active, .keypad-btn.active-key {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #0f172a, 0 2px 5px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+        .keypad-btn-star {
+            background: linear-gradient(180deg, #7f1d1d 0%, #450a0a 100%);
+            border-color: #b91c1c;
+            box-shadow: 0 5px 0 #2a0404, 0 8px 15px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        .keypad-btn-star:hover {
+            background: linear-gradient(180deg, #991b1b 0%, #5c0e0e 100%);
+        }
+        .keypad-btn-hash {
+            background: linear-gradient(180deg, #047857 0%, #064e3b 100%);
+            border-color: #10b981;
+            box-shadow: 0 5px 0 #022c22, 0 8px 15px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.25);
+        }
+        .keypad-btn-hash:hover {
+            background: linear-gradient(180deg, #059669 0%, #065f46 100%);
+        }
+        .calc-op-btn {
+            background: linear-gradient(180deg, #4338ca 0%, #312e81 100%);
+            border: 1px solid #6366f1;
+            box-shadow: 0 4px 0 #1e1b4b, 0 6px 10px rgba(0,0,0,0.35);
+            transition: all 0.08s ease;
+        }
+        .calc-op-btn:hover {
+            background: linear-gradient(180deg, #4f46e5 0%, #3730a3 100%);
+        }
+        .calc-op-btn:active, .calc-op-btn.active-key {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #1e1b4b;
+        }
+        /* Vintage Japanese Memo Paper Styling */
+        .memo-paper {
+            background-color: #fef3c7;
+            background-image: 
+                radial-gradient(at 20% 80%, rgba(217, 119, 6, 0.12) 0px, transparent 50%),
+                radial-gradient(at 80% 20%, rgba(180, 83, 9, 0.1) 0px, transparent 50%),
+                repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(180, 83, 9, 0.12) 28px);
+            color: #292524;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 0 30px rgba(180, 83, 9, 0.15);
+            border: 1px solid #d97706;
+        }
+        /* Digital LCD Glow */
+        .lcd-screen {
+            background: linear-gradient(180deg, #022c22 0%, #061512 100%);
+            border: 2px solid #0f766e;
+            box-shadow: inset 0 4px 12px rgba(0,0,0,0.85), 0 0 12px rgba(16, 185, 129, 0.15);
+        }
+        .calc-screen {
+            background: linear-gradient(180deg, #0f172a 0%, #090d16 100%);
+            border: 2px solid #3b82f6;
+            box-shadow: inset 0 4px 12px rgba(0,0,0,0.85), 0 0 12px rgba(59, 130, 246, 0.15);
+        }
+        /* Token hover highlight on Memo */
+        .memo-token {
+            display: inline-block;
+            padding: 2px 6px;
+            margin: 2px;
+            border-radius: 6px;
+            border-bottom: 2px dashed rgba(180, 83, 9, 0.5);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .memo-token:hover {
+            background-color: rgba(245, 158, 11, 0.3);
+            transform: translateY(-2px);
+            border-bottom-color: #b45309;
+        }
+        /* Shake animation for wrong PIN */
+        @keyframes shakeError {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .shake-error {
+            animation: shakeError 0.4s ease-in-out;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        ruby rt {
+            font-size: 0.65em;
+            color: #9a3412;
+            font-weight: 700;
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased selection:bg-amber-500 selection:text-slate-950">
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="sticky top-0 z-30 backdrop-blur-md bg-slate-900/90 border-b border-slate-800 px-3 sm:px-6 py-2.5">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+            <!-- Brand Title -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 shadow-lg shadow-amber-500/20 font-black text-xl">
+                    <i class="fa-solid fa-vault"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 id="ui-app-title" class="text-base sm:text-lg font-extrabold tracking-tight text-white">
+                            일본어 숫자 금고 해독기
+                        </h1>
+                        <span class="hidden md:inline-block text-xs font-mono uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            1-9, 0, *, #
+                        </span>
+                    </div>
+                    <p id="ui-app-subtitle" class="text-xs text-slate-400 hidden sm:block">
+                        일본어 계산기와 숫자 암호표로 비밀 메모를 풀고 금고를 여세요
+                    </p>
+                </div>
+            </div>
+
+            <!-- Right Controls: Dictionary, Audio, Language Switcher -->
+            <div class="flex items-center gap-2 flex-wrap">
+                <!-- Cheat Sheet / Reference Modal Trigger -->
+                <button onclick="toggleReferenceModal(true)" class="px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-book-open"></i>
+                    <span id="ui-btn-dict">일본어 숫자 해독표</span>
+                </button>
+
+                <!-- Sound Toggle -->
+                <button id="btn-sound" onclick="toggleSound()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-sm transition" title="Toggle Sound">
+                    <i id="icon-sound" class="fa-solid fa-volume-high text-emerald-400"></i>
+                </button>
+
+                <!-- Language Switcher (한국어 / 日本語 / English) -->
+                <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800" role="group" aria-label="Language Selector">
+                    <button onclick="setLanguage('ko')" id="lang-btn-ko" class="px-2.5 py-1 rounded-lg text-xs font-bold transition bg-amber-500 text-slate-950">
+                        한국어
+                    </button>
+                    <button onclick="setLanguage('ja')" id="lang-btn-ja" class="px-2.5 py-1 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white">
+                        日本語
+                    </button>
+                    <button onclick="setLanguage('en')" id="lang-btn-en" class="px-2.5 py-1 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white">
+                        ENG
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- STAGE SELECTOR BAR -->
+    <section class="bg-slate-900/60 border-b border-slate-800/80 px-3 sm:px-6 py-2">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
+            <div class="flex items-center gap-1.5 sm:gap-2 py-0.5" id="stage-tabs-container">
+                <!-- Populated dynamically by JS -->
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="text-xs text-slate-400 font-medium" id="ui-score-label">해독 성공:</span>
+                <span id="ui-solved-count" class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-mono text-xs font-bold">
+                    0 / 5
+                </span>
+            </div>
+        </div>
+    </section>
+
+    <!-- MAIN GAME WORKSPACE -->
+    <main class="max-w-7xl mx-auto px-3 sm:px-6 py-4 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+        <!-- LEFT COLUMN (7 cols on lg): 3D SAFE VIEWPORT + SECRET JAPANESE MEMO -->
+        <div class="lg:col-span-7 flex flex-col gap-4">
+
+            <!-- 3D SAFE CONTAINER -->
+            <div class="relative rounded-2xl bg-slate-900/90 border border-slate-800 shadow-2xl overflow-hidden">
+                <!-- Top Overlay Bar inside 3D Viewport -->
+                <div class="absolute top-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-none">
+                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950/80 backdrop-blur-md border border-slate-800 pointer-events-auto">
+                        <span id="safe-status-dot" class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+                        <span id="ui-safe-status-text" class="text-xs font-mono font-bold text-slate-200">LOCKED (잠김)</span>
+                    </div>
+
+                    <div class="flex items-center gap-1.5 pointer-events-auto">
+                        <button onclick="speakCurrentMemo()" class="px-2.5 py-1.5 rounded-xl bg-slate-950/80 hover:bg-slate-800 text-amber-300 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition" title="Listen in Japanese">
+                            <i class="fa-solid fa-ear-listen"></i>
+                            <span id="ui-btn-tts">일본어 발음 듣기</span>
+                        </button>
+                        <button onclick="resetCameraView()" class="p-1.5 px-2.5 rounded-xl bg-slate-950/80 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs transition" title="Reset 3D Camera">
+                            <i class="fa-solid fa-camera-rotate"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Three.js Canvas Mount -->
+                <div id="vault-canvas-container" class="w-full h-[270px] sm:h-[330px] cursor-grab active:cursor-grabbing relative">
+                    <!-- Three.js renders here -->
+                </div>
+
+                <!-- Bottom Overlay inside 3D Viewport: Camera Hint & Unlock Action Banner -->
+                <div class="bg-slate-950/90 border-t border-slate-800/80 px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+                    <span id="ui-camera-hint" class="flex items-center gap-1.5">
+                        <i class="fa-solid fa-hand-pointer text-amber-400"></i>
+                        마우스 드래그나 터치로 3D 금고를 회전할 수 있습니다
+                    </span>
+                    <div id="next-stage-banner" class="hidden flex items-center gap-2">
+                        <span id="ui-unlocked-congrats" class="text-emerald-400 font-bold">🎉 금고 해독 완료!</span>
+                        <button onclick="goToNextStage()" class="px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs transition shadow-lg shadow-emerald-500/20 flex items-center gap-1">
+                            <span id="ui-btn-next-stage">다음 스테이지</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- JAPANESE SECRET MEMO CARD -->
+            <div class="rounded-2xl bg-slate-900/90 border border-slate-800 p-4 shadow-xl flex flex-col gap-3">
+                <!-- Memo Header & Controls -->
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+                    <div class="flex items-center gap-2">
+                        <span id="memo-stage-badge" class="px-2.5 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono text-xs font-bold">
+                            STAGE 1
+                        </span>
+                        <h2 id="memo-title" class="text-sm sm:text-base font-bold text-white">
+                            기초 한자 숫자 메모 (基本漢数字)
+                        </h2>
+                    </div>
+
+                    <div class="flex items-center gap-1.5">
+                        <!-- Toggle Furigana / Reading Aid -->
+                        <button onclick="toggleFurigana()" id="btn-furigana" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-amber-300 flex items-center gap-1 transition">
+                            <i class="fa-solid fa-language"></i>
+                            <span id="ui-btn-furigana">독음(후리가나) 표시: ON</span>
+                        </button>
+                        <!-- Toggle Step-by-Step Hint -->
+                        <button onclick="toggleHintBox()" class="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/40 text-xs font-semibold text-indigo-300 flex items-center gap-1 transition">
+                            <i class="fa-regular fa-lightbulb"></i>
+                            <span id="ui-btn-hint">힌트 보기</span>
+                        </button>
+                        <!-- New Random Puzzle button (shown especially in Stage 6 or anytime) -->
+                        <button onclick="rerollCurrentStage()" id="btn-reroll" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-xs font-semibold text-emerald-300 flex items-center gap-1 transition" title="New Random Memo">
+                            <i class="fa-solid fa-dice"></i>
+                            <span id="ui-btn-reroll">새 암호 생성</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Story Context -->
+                <p id="memo-story" class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    금고 옆 책상에서 찢어진 일본어 메모지가 발견되었습니다. 한자 숫자를 아라비아 숫자로 바꾸고 마지막에 <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-emerald-400 font-mono">#</kbd> 버튼을 눌러 금고를 여세요.
+                </p>
+
+                <!-- Physical Aged Paper Memo Box -->
+                <div class="memo-paper rounded-xl p-4 sm:p-5 relative overflow-hidden">
+                    <!-- Decorative Stamp -->
+                    <div class="absolute top-3 right-3 w-12 h-12 rounded-full border-2 border-red-700/60 flex items-center justify-center text-red-800/70 font-serifJp font-extrabold text-xs rotate-12 pointer-events-none">
+                        極秘<br>暗号
+                    </div>
+
+                    <div class="text-xs font-bold uppercase tracking-wider text-amber-900/70 mb-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-scroll"></i>
+                        <span id="ui-memo-paper-label">발견된 일본어 암호 메모 (단어를 클릭하면 뜻이 표시됩니다)</span>
+                    </div>
+
+                    <!-- Main Japanese Cipher Text -->
+                    <div id="memo-cipher-content" class="my-3 text-2xl sm:text-3xl font-serifJp font-extrabold text-stone-900 tracking-wide text-center py-2 select-text">
+                        <!-- Rendered dynamically -->
+                    </div>
+
+                    <!-- Clicked Token Inspector Bar -->
+                    <div id="token-inspector" class="mt-2 px-3 py-2 rounded-lg bg-amber-950/10 border border-amber-900/20 text-xs sm:text-sm text-stone-800 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-magnifying-glass text-amber-800"></i>
+                            <span id="token-inspector-text" class="font-medium">메모의 일본어 글자를 클릭하면 숫자와 읽는 법을 알려줍니다.</span>
+                        </div>
+                        <span id="token-inspector-badge" class="font-mono font-extrabold text-amber-900 bg-amber-300/60 px-2 py-0.5 rounded hidden"></span>
+                    </div>
+                </div>
+
+                <!-- Collapsible Hint & Formula Breakdown Box -->
+                <div id="hint-box" class="hidden rounded-xl bg-indigo-950/50 border border-indigo-500/40 p-3.5 text-xs sm:text-sm text-indigo-200 space-y-1.5">
+                    <div class="font-bold text-indigo-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span id="ui-hint-title">해독 힌트 & 풀이법</span>
+                    </div>
+                    <p id="hint-text" class="leading-relaxed text-slate-200"></p>
+                    <div class="pt-1 flex flex-wrap items-center gap-2">
+                        <button onclick="loadMemoIntoCalculator()" id="btn-auto-calc" class="px-3 py-1 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-xs transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-calculator"></i>
+                            <span id="ui-btn-load-calc">이 수식을 계산기에 자동 입력</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN (5 cols on lg): SAFE LCD + JAPANESE CALCULATOR + KEYPAD (1-9, 0, *, #) -->
+        <div class="lg:col-span-5 flex flex-col gap-4">
+
+            <!-- UNIFIED CONTROL PANEL -->
+            <div class="rounded-2xl bg-slate-900/95 border border-slate-700/80 p-4 shadow-2xl flex flex-col gap-3.5">
+
+                <!-- 1. SAFE DIGITAL CODE SCREEN (금고 입력창) -->
+                <div class="lcd-screen rounded-xl p-3.5 flex flex-col gap-1.5 relative">
+                    <div class="flex items-center justify-between text-[11px] font-mono text-emerald-400/80">
+                        <span class="flex items-center gap-1.5 font-bold">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <span id="ui-safe-screen-title">SAFE PIN INPUT (금고 비밀번호)</span>
+                        </span>
+                        <span id="safe-digit-len-hint" class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-700/50">
+                            4 DIGITS + #
+                        </span>
+                    </div>
+
+                    <!-- Arabic PIN Display -->
+                    <div class="flex items-center justify-between gap-2 my-0.5">
+                        <div id="safe-pin-display" class="font-mono text-2xl sm:text-3xl font-extrabold tracking-[0.25em] text-emerald-300 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] truncate">
+                            _ _ _ _
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button onclick="backspaceSafePin()" class="px-2 py-1 rounded bg-slate-800/90 hover:bg-slate-700 text-slate-300 text-xs font-mono border border-slate-600 transition" title="Backspace">
+                                <i class="fa-solid fa-delete-left"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Live Japanese Reading of Safe PIN -->
+                    <div class="border-t border-emerald-800/60 pt-1.5 flex flex-col gap-0.5 text-xs">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-emerald-500/80 font-mono text-[11px]" id="ui-safe-kanji-label">한자/대자:</span>
+                            <span id="safe-pin-kanji" class="font-serifJp font-bold text-emerald-200 truncate">-</span>
+                        </div>
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-emerald-500/80 font-mono text-[11px]" id="ui-safe-reading-label">일본어 독음:</span>
+                            <span id="safe-pin-reading" class="text-emerald-300/90 font-medium truncate">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. JAPANESE NUMBER CALCULATOR PANEL (일본어 형식 숫자 계산기) -->
+                <div class="calc-screen rounded-xl p-3.5 flex flex-col gap-2">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-[11px] font-mono font-bold text-blue-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-calculator"></i>
+                            <span id="ui-calc-title">일본어 숫자 계산기 (和算電卓)</span>
+                        </span>
+
+                        <!-- Input Target Switcher: Direct Safe vs Calculator -->
+                        <div class="flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-700 text-[11px]">
+                            <button onclick="setInputTarget('safe')" id="target-btn-safe" class="px-2 py-0.5 rounded-md font-bold transition bg-emerald-500 text-slate-950">
+                                <i class="fa-solid fa-lock text-[10px]"></i> <span id="ui-mode-safe">금고 입력</span>
+                            </button>
+                            <button onclick="setInputTarget('calc')" id="target-btn-calc" class="px-2 py-0.5 rounded-md font-bold transition text-slate-400 hover:text-white">
+                                <i class="fa-solid fa-calculator text-[10px]"></i> <span id="ui-mode-calc">계산기 모드</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Expression & Result Display in Japanese + Arabic -->
+                    <div class="bg-slate-950/90 rounded-lg p-2.5 border border-slate-800 space-y-1">
+                        <!-- Japanese Formula Line -->
+                        <div id="calc-jp-formula" class="text-xs text-blue-300/90 font-serifJp min-h-[1.25rem] break-all">
+                            0 (零 / ゼロ)
+                        </div>
+                        <!-- Arabic Expression & Big Number -->
+                        <div class="flex items-baseline justify-between gap-2">
+                            <span id="calc-arabic-expr" class="text-xs font-mono text-slate-400 truncate"></span>
+                            <span id="calc-main-value" class="text-xl sm:text-2xl font-mono font-extrabold text-white tracking-wider ml-auto">0</span>
+                        </div>
+                        <!-- Positional Kanji & Reading of Calculator Value -->
+                        <div class="border-t border-slate-800/80 pt-1 flex flex-col text-[11px] text-slate-300 gap-0.5">
+                            <div class="flex justify-between gap-2">
+                                <span class="text-slate-500" id="ui-calc-pos-label">단위 한자:</span>
+                                <span id="calc-pos-kanji" class="font-serifJp font-bold text-amber-300">零 (대자: 零)</span>
+                            </div>
+                            <div class="flex justify-between gap-2">
+                                <span class="text-slate-500" id="ui-calc-kana-label">발음:</span>
+                                <span id="calc-kana-reading" class="text-blue-200">れい / ゼロ (레이 / 제로)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Japanese Arithmetic Operator Buttons (+, -, ×, ÷, =, Send to Safe) -->
+                    <div class="grid grid-cols-6 gap-1.5">
+                        <button onclick="pressCalcOp('+')" class="calc-op-btn rounded-lg py-1.5 text-center flex flex-col items-center justify-center">
+                            <span class="text-sm font-mono font-black text-white">+</span>
+                            <span class="text-[10px] text-indigo-200 font-bold leading-tight" id="ui-op-add">足す</span>
+                        </button>
+                        <button onclick="pressCalcOp('-')" class="calc-op-btn rounded-lg py-1.5 text-center flex flex-col items-center justify-center">
+                            <span class="text-sm font-mono font-black text-white">−</span>
+                            <span class="text-[10px] text-indigo-200 font-bold leading-tight" id="ui-op-sub">引く</span>
+                        </button>
+                        <button onclick="pressCalcOp('*')" class="calc-op-btn rounded-lg py-1.5 text-center flex flex-col items-center justify-center">
+                            <span class="text-sm font-mono font-black text-white">×</span>
+                            <span class="text-[10px] text-indigo-200 font-bold leading-tight" id="ui-op-mul">掛ける</span>
+                        </button>
+                        <button onclick="pressCalcOp('/')" class="calc-op-btn rounded-lg py-1.5 text-center flex flex-col items-center justify-center">
+                            <span class="text-sm font-mono font-black text-white">÷</span>
+                            <span class="text-[10px] text-indigo-200 font-bold leading-tight" id="ui-op-div">割る</span>
+                        </button>
+                        <button onclick="pressCalcEquals()" class="rounded-lg py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black flex flex-col items-center justify-center shadow-md transition active:translate-y-0.5">
+                            <span class="text-sm font-mono">=</span>
+                            <span class="text-[10px] font-extrabold leading-tight" id="ui-op-eq">계산</span>
+                        </button>
+                        <button onclick="clearCalculator()" class="rounded-lg py-1.5 bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700 font-bold flex flex-col items-center justify-center text-xs transition">
+                            <span class="font-mono font-bold">AC</span>
+                            <span class="text-[9px] text-slate-400 leading-tight" id="ui-op-ac">초기화</span>
+                        </button>
+                    </div>
+
+                    <!-- Transfer Calculated Result to Safe Input Button -->
+                    <button onclick="transferCalcToSafe()" class="w-full py-1.5 px-3 rounded-lg bg-blue-600/30 hover:bg-blue-600/50 border border-blue-400/50 text-blue-200 text-xs font-bold flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-share-from-square"></i>
+                        <span id="ui-btn-transfer">계산 결과를 금고 비밀번호 창으로 전송</span>
+                    </button>
+                </div>
+
+                <!-- 3. JAPANESE SAFE KEYPAD (1, 2, 3, 4, 5, 6, 7, 8, 9, *, 0, #) -->
+                <div class="grid grid-cols-3 gap-2.5 pt-1" id="japanese-keypad">
+                    <!-- Key 1 -->
+                    <button onclick="pressKeypad('1')" id="key-btn-1" class="keypad-btn rounded-xl py-2.5 px-2 flex flex-col items-center justify-center">
+                        <div class="flex items-baseline gap-1.5">
+                            <span class="text-2xl font-mono font-black text-white">1</span>
+                            <span class="text-base font-serifJp font-extrabold text-amber-400">一</span>
+                            <span class="text-xs font-serifJp text-slate-400">(壱)</span>
+                        </div>
+                        <span class="text-[11px] font-medium text-slate-300 mt-0.5">いち <span class="text-slate-400 text-[10px]" id="key-sub-1">(이치)</span></span>
+                    </button>
+
+                    <!-- Key 2 -->
+                    <button onclick="pressKeypad('2')" id="key-btn-2" class="keypad-btn rounded-xl py-2.5 px-2 flex flex-col items-center justify-center">
+                        <div class="flex items-baseline gap-1.5">
+                            <span class="text-2xl font-mono font-black text-white">2</span>
+                            <span class="text-base font-serifJp font-extrabold text-amber-400">二</span>
+                            <span class="text-xs font-serifJp text-slate-400">(弐)</span>
+                        </div>
+                        <span class="text-[11px] font-medium text-slate-300 mt-0.5">に <span class="text-slate-400 text-[10px]" id="key-sub-2">(니)</span></span>
+                    </button>
+
+                    <!-- Key 3 -->
+                    <button onclick="pressKeypad('3')" id="key-btn-3" class="keypad-btn rounded-xl py-2.5 px-2 flex flex-col items-center justify-center">
+                        <div class="flex items-baseline gap-1.5">
+                            <span class="text-2xl font-mono font-black text-white">3</span>
+                            <span class="text-base font-serifJp font-extrabold text-amber-400">三</span>
+                            <span class="text-xs font-serifJp text-slate-400">(参)</span>
+                        </div>
+                        <span class="text-[11px] font-medium text-slate-300 mt-0.5">さん <span class="text-slate-400 text-[10px]" id="key-sub-3">(산)</span></span>
+                    </button>
+
+                    <!-- Key 4 -->
+                    <button onclick="pressKeypad('4')" id="key-btn-4" class="keypad-btn rounded-xl py-2.5 px-2 flex flex-col items-center justify-center">
+                        <div class="flex items-baseline gap-1.5">
+                            <span class="text-2xl font-mono font-black text-white">4</span>
+                            <span class="text-base font-serifJp font-extrabold text-amber-400">四</span>
+                            <span class="text-xs font-serifJp text-slate-400">(肆)</span>
+                        </div>
+                        <span class="text-[11px] font-medium text-slate-300 mt-0.5">よん・し <span class="text-slate-400 text-[10px]" id="key-sub-4">(욘/시)</span></span>
+                    </button>
+
+                    <!-- Key 5 -->
+                    <button onclick="pressKeypad('5')" id="key-btn-5" class="keypad-btn rounded-xl py-2.5 px-2 flex flex-col items-center justify-center">
+                        <div class="flex items-baseline gap-1.5">
+                            <span class="text-2xl font-mono font-black text-white">5</span>
+                            <span class="text-base font-serifJp font-extrabold text-amber-400">五</span>
+                            <span class="text-xs font-serifJp text-slate-400">(伍)</span>
+                        </div>
+                        <span class="text-[11px] font-medium text-slate-300 mt-0.5">ご <span class="text-slate-400 text-[10px]" id="key-sub-5">(고)</span></span>
+                    </button>
+
+                    <!-- Key 6 -->
+                    <button onclick="pressKeypad('6')" id="key-btn-6" class="keypad-btn rounded-xl py-2.5 px-2 flex flex-col items-center justify-center">
+                        <div class="flex items-baseline gap-1.5">
+                            <span class="text-2xl font-mono font-black text-white">6</span>
+                            <span class="text-base font-serifJp font-extrabold text-amber-400">六</span>
+                            <span class="text-xs font-serifJp text-slate-400">(陸)</span>
+                        </div>
+                        <span class="text-[11px] font-medium text-slate-300 mt-0.5">ろく <span class="text-slate-400 text-[10px]" id="key-sub-6">(로쿠)</span></span>
+                    </button>
+
+                    <!-- Key 7 -->
+                    <button onclick="pressKeypad('7')" id="key-btn-7" class="keypad-btn rounded-xl py-2.5 px-2 flex flex-col items-center justify-center">
+                        <div class="flex items-baseline gap-1.5">
+                            <span class="text-2xl font-mono font-black text-white">7</span>
+                            <span class="text-base font-serifJp font-extrabold text-amber-400">七</span>
+                            <span class="text-xs font-serifJp text-slate-400">(漆)</span>
+                        </div>
+                        <span class="text-[11px] font-medium text-slate-300 mt-0.5">なな・しち <span class="text-slate-400 text-[10px]" id="key-sub-7">(나나)</span></span>
+                    </button>
+
+                    <!-- Key 8 -->
+                    <button onclick="pressKeypad('8')" id="key-btn-8" class="keypad-btn rounded-xl py-2.5 px-2 flex flex-col items-center justify-center">
+                        <div class="flex items-baseline gap-1.5">
+                            <span class="text-2xl font-mono font-black text-white">8</span>
+                            <span class="text-base font-serifJp font-extrabold text-amber-400">八</span>
+                            <span class="text-xs font-serifJp text-slate-400">(捌)</span>
+                        </div>
+                        <span class="text-[11px] font-medium text-slate-300 mt-0.5">はち <span class="text-slate-400 text-[10px]" id="key-sub-8">(하치)</span></span>
+                    </button>
+
+                    <!-- Key 9 -->
+                    <button onclick="pressKeypad('9')" id="key-btn-9" class="keypad-btn rounded-xl py-2.5 px-2 flex flex-col items-center justify-center">
+                        <div class="flex items-baseline gap-1.5">
+                            <span class="text-2xl font-mono font-black text-white">9</span>
+                            <span class="text-base font-serifJp font-extrabold text-amber-400">九</span>
+                            <span class="text-xs font-serifJp text-slate-400">(玖)</span>
+                        </div>
+                        <span class="text-[11px] font-medium text-slate-300 mt-0.5">きゅう・く <span class="text-slate-400 text-[10px]" id="key-sub-9">(큐우)</span></span>
+                    </button>
+
+                    <!-- Key * (Clear / Reset) -->
+                    <button onclick="pressKeypad('*')" id="key-btn-star" class="keypad-btn keypad-btn-star rounded-xl py-2.5 px-2 flex flex-col items-center justify-center">
+                        <div class="flex items-baseline gap-1.5">
+                            <span class="text-2xl font-mono font-black text-rose-200">*</span>
+                            <span class="text-xs font-bold text-rose-200">消去</span>
+                        </div>
+                        <span class="text-[11px] font-bold text-rose-100 mt-0.5" id="key-sub-star">CLR / 지우기</span>
+                    </button>
+
+                    <!-- Key 0 -->
+                    <button onclick="pressKeypad('0')" id="key-btn-0" class="keypad-btn rounded-xl py-2.5 px-2 flex flex-col items-center justify-center">
+                        <div class="flex items-baseline gap-1.5">
+                            <span class="text-2xl font-mono font-black text-white">0</span>
+                            <span class="text-base font-serifJp font-extrabold text-amber-400">零</span>
+                            <span class="text-xs font-serifJp text-slate-400">(〇)</span>
+                        </div>
+                        <span class="text-[11px] font-medium text-slate-300 mt-0.5">れい・ゼロ <span class="text-slate-400 text-[10px]" id="key-sub-0">(레이)</span></span>
+                    </button>
+
+                    <!-- Key # (Enter / Unlock Safe) -->
+                    <button onclick="pressKeypad('#')" id="key-btn-hash" class="keypad-btn keypad-btn-hash rounded-xl py-2.5 px-2 flex flex-col items-center justify-center">
+                        <div class="flex items-baseline gap-1.5">
+                            <span class="text-2xl font-mono font-black text-emerald-100">#</span>
+                            <span class="text-xs font-bold text-emerald-200">解錠</span>
+                        </div>
+                        <span class="text-[11px] font-extrabold text-white mt-0.5" id="key-sub-hash">ENTER / 열기</span>
+                    </button>
+                </div>
+
+                <!-- Keyboard Shortcut Footer -->
+                <div class="text-center text-[11px] text-slate-400 pt-1 flex items-center justify-center gap-2 flex-wrap">
+                    <span><kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 font-mono text-slate-300">0-9</kbd> <span id="ui-kbd-num">숫자</span></span>
+                    <span>•</span>
+                    <span><kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 font-mono text-rose-300">*</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 font-mono text-slate-300">BS</kbd> <span id="ui-kbd-clr">지우기</span></span>
+                    <span>•</span>
+                    <span><kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 font-mono text-emerald-300">#</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 font-mono text-slate-300">Enter</kbd> <span id="ui-kbd-open">금고 열기</span></span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- JAPANESE NUMBER & CIPHER REFERENCE MODAL (일본어 숫자 해독 사전) -->
+    <div id="reference-modal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
+            <!-- Modal Header -->
+            <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-book-journal-whills text-amber-400 text-xl"></i>
+                    <h3 id="ui-modal-title" class="text-base sm:text-lg font-extrabold text-white">
+                        일본어 숫자 · 대자 · 계산식 · 고로아와세 해독 사전
+                    </h3>
+                </div>
+                <button onclick="toggleReferenceModal(false)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-4 sm:p-6 overflow-y-auto space-y-6 text-xs sm:text-sm">
+                <!-- Section 1: 0-9 Basic & Daiji Table -->
+                <div>
+                    <h4 id="ui-ref-sec1" class="text-amber-400 font-bold mb-2.5 flex items-center gap-2">
+                        <i class="fa-solid fa-list-ol"></i>
+                        1. 기본 숫자 (0~9) & 금고·은행용 대자 (大字)
+                    </h4>
+                    <div class="overflow-x-auto rounded-xl border border-slate-800">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-950 text-slate-300 border-b border-slate-800">
+                                    <th class="py-2 px-3 font-mono">숫자</th>
+                                    <th class="py-2 px-3">일반 한자 (漢数字)</th>
+                                    <th class="py-2 px-3">금고 대자 (大字)</th>
+                                    <th class="py-2 px-3">히라가나 (독음)</th>
+                                    <th class="py-2 px-3">한국어 / Romaji</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/70 bg-slate-900/60">
+                                <tr><td class="py-2 px-3 font-mono font-bold text-amber-400">0</td><td class="py-2 px-3 font-serifJp text-base">零 / 〇</td><td class="py-2 px-3 font-serifJp text-base text-emerald-300">零</td><td class="py-2 px-3">れい / ゼロ / まる</td><td class="py-2 px-3">레이 / 제로 / 마루 (rei / zero)</td></tr>
+                                <tr><td class="py-2 px-3 font-mono font-bold text-amber-400">1</td><td class="py-2 px-3 font-serifJp text-base">一</td><td class="py-2 px-3 font-serifJp text-base text-emerald-300">壱</td><td class="py-2 px-3">いち (고로아와세: い・ひ)</td><td class="py-2 px-3">이치 (ichi)</td></tr>
+                                <tr><td class="py-2 px-3 font-mono font-bold text-amber-400">2</td><td class="py-2 px-3 font-serifJp text-base">二</td><td class="py-2 px-3 font-serifJp text-base text-emerald-300">弐</td><td class="py-2 px-3">に (고로아와세: ふ・츠)</td><td class="py-2 px-3">니 (ni)</td></tr>
+                                <tr><td class="py-2 px-3 font-mono font-bold text-amber-400">3</td><td class="py-2 px-3 font-serifJp text-base">三</td><td class="py-2 px-3 font-serifJp text-base text-emerald-300">参</td><td class="py-2 px-3">さん (고로아와세: み・サン)</td><td class="py-2 px-3">산 (san)</td></tr>
+                                <tr><td class="py-2 px-3 font-mono font-bold text-amber-400">4</td><td class="py-2 px-3 font-serifJp text-base">四</td><td class="py-2 px-3 font-serifJp text-base text-emerald-300">肆</td><td class="py-2 px-3">よん / し (고로아와세: よ)</td><td class="py-2 px-3">욘 / 시 (yon / shi)</td></tr>
+                                <tr><td class="py-2 px-3 font-mono font-bold text-amber-400">5</td><td class="py-2 px-3 font-serifJp text-base">五</td><td class="py-2 px-3 font-serifJp text-base text-emerald-300">伍</td><td class="py-2 px-3">ご (고로아와세: いつ・こ)</td><td class="py-2 px-3">고 (go)</td></tr>
+                                <tr><td class="py-2 px-3 font-mono font-bold text-amber-400">6</td><td class="py-2 px-3 font-serifJp text-base">六</td><td class="py-2 px-3 font-serifJp text-base text-emerald-300">陸</td><td class="py-2 px-3">ろく (고로아와세: ろ・む)</td><td class="py-2 px-3">로쿠 (roku)</td></tr>
+                                <tr><td class="py-2 px-3 font-mono font-bold text-amber-400">7</td><td class="py-2 px-3 font-serifJp text-base">七</td><td class="py-2 px-3 font-serifJp text-base text-emerald-300">漆 / 質</td><td class="py-2 px-3">なな / しち (고로아와세: な)</td><td class="py-2 px-3">나나 / 시치 (nana / shichi)</td></tr>
+                                <tr><td class="py-2 px-3 font-mono font-bold text-amber-400">8</td><td class="py-2 px-3 font-serifJp text-base">八</td><td class="py-2 px-3 font-serifJp text-base text-emerald-300">捌</td><td class="py-2 px-3">はち (고로아와세: や・ぱ)</td><td class="py-2 px-3">하치 (hachi)</td></tr>
+                                <tr><td class="py-2 px-3 font-mono font-bold text-amber-400">9</td><td class="py-2 px-3 font-serifJp text-base">九</td><td class="py-2 px-3 font-serifJp text-base text-emerald-300">玖</td><td class="py-2 px-3">きゅう / く (고로아와세: く・きゅ)</td><td class="py-2 px-3">큐우 / 쿠 (kyuu / ku)</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Section 2: Units & Math Operations -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-slate-950/70 p-4 rounded-xl border border-slate-800">
+                        <h4 id="ui-ref-sec2" class="text-blue-400 font-bold mb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-layer-group"></i>
+                            2. 자리 단위 (十, 百, 千, 万)
+                        </h4>
+                        <ul class="space-y-1.5 text-slate-300">
+                            <li><strong class="text-white font-serifJp">十 (대자: 拾)</strong> = <span class="font-mono text-amber-300">10</span> (じゅう / 쥬우) — 예: <span class="font-serifJp">二十五</span> = 25</li>
+                            <li><strong class="text-white font-serifJp">百 (대자: 佰)</strong> = <span class="font-mono text-amber-300">100</span> (ひゃく / 햐쿠) — 예: <span class="font-serifJp">三百</span> = 300</li>
+                            <li><strong class="text-white font-serifJp">千 (대자: 仟)</strong> = <span class="font-mono text-amber-300">1,000</span> (せん / 센) — 예: <span class="font-serifJp">四千</span> = 4000</li>
+                            <li><strong class="text-white font-serifJp">万 (대자: 萬)</strong> = <span class="font-mono text-amber-300">10,000</span> (まん / 만)</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-slate-950/70 p-4 rounded-xl border border-slate-800">
+                        <h4 id="ui-ref-sec3" class="text-indigo-400 font-bold mb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-square-root-variable"></i>
+                            3. 일본어 사칙연산 표현
+                        </h4>
+                        <ul class="space-y-1.5 text-slate-300">
+                            <li><strong class="text-emerald-300 font-serifJp">足す (たす / 타스)</strong> = <span class="font-mono font-bold">+ (더하기 / Plus)</span></li>
+                            <li><strong class="text-rose-300 font-serifJp">引く (ひく / 히쿠)</strong> = <span class="font-mono font-bold">− (빼기 / Minus)</span></li>
+                            <li><strong class="text-amber-300 font-serifJp">掛ける (かける / 카케루)</strong> = <span class="font-mono font-bold">× (곱하기 / Multiply)</span></li>
+                            <li><strong class="text-cyan-300 font-serifJp">割る (わる / 와루)</strong> = <span class="font-mono font-bold">÷ (나누기 / Divide)</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Section 3: Goroawase Examples -->
+                <div class="bg-slate-950/70 p-4 rounded-xl border border-slate-800">
+                    <h4 id="ui-ref-sec4" class="text-emerald-400 font-bold mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-key"></i>
+                        4. 자주 쓰이는 일본어 고로아와세 (語呂合わせ 숫자 암호)
+                    </h4>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                        <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                            <div class="font-mono font-extrabold text-amber-400 text-base">4649</div>
+                            <div class="font-bold text-white">よろしく (요로시쿠)</div>
+                            <div class="text-xs text-slate-400">よ(4) ろ(6) し(4) く(9) = 잘 부탁해</div>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                            <div class="font-mono font-extrabold text-amber-400 text-base">39</div>
+                            <div class="font-bold text-white">サンキュー (산큐)</div>
+                            <div class="text-xs text-slate-400">サン(3) キュー(9) = Thank you</div>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                            <div class="font-mono font-extrabold text-amber-400 text-base">2525</div>
+                            <div class="font-bold text-white">ニコニコ (니코니코)</div>
+                            <div class="text-xs text-slate-400">ニ(2) コ(5) ニ(2) コ(5) = 생긋생긋</div>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                            <div class="font-mono font-extrabold text-amber-400 text-base">0840</div>
+                            <div class="font-bold text-white">おはよう (오하요)</div>
+                            <div class="text-xs text-slate-400">お(0) は(8) よ(4) う(0) = 좋은 아침</div>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                            <div class="font-mono font-extrabold text-amber-400 text-base">5963</div>
+                            <div class="font-bold text-white">ご苦労さん (고쿠로산)</div>
+                            <div class="text-xs text-slate-400">ご(5) く(9) ろ(6) さん(3) = 수고했어</div>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                            <div class="font-mono font-extrabold text-amber-400 text-base">1192</div>
+                            <div class="font-bold text-white">いい国 (이이쿠니)</div>
+                            <div class="text-xs text-slate-400">い(1) い(1) く(9) に(2) = 가마쿠라 막부</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST FEEDBACK NOTIFICATION -->
+    <div id="toast-box" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-300 transform translate-y-4">
+        <div id="toast-inner" class="px-4 py-2.5 rounded-xl bg-slate-900/95 border border-amber-500/50 text-white text-xs sm:text-sm font-bold shadow-2xl flex items-center gap-2">
+            <i id="toast-icon" class="fa-solid fa-circle-info text-amber-400"></i>
+            <span id="toast-text">메시지</span>
+        </div>
+    </div>
+
+    <!-- APPLICATION LOGIC -->
+    <script>
+        /***********************************************************************
+         * 1. MULTILINGUAL TRANSLATION DICTIONARY (한국어 / 日本語 / English)
+         ***********************************************************************/
+        const I18N = {
+            ko: {
+                appTitle: "일본어 숫자 금고 해독기",
+                appSubtitle: "일본어 계산기와 숫자 암호표로 비밀 메모를 풀고 금고를 여세요",
+                btnDict: "일본어 숫자 해독표",
+                scoreLabel: "해독 성공:",
+                statusLocked: "LOCKED (잠김)",
+                statusUnlocked: "UNLOCKED (금고 열림!)",
+                statusError: "ERROR (코드 불일치)",
+                btnTts: "일본어 발음 듣기",
+                cameraHint: "마우스 드래그나 터치로 3D 금고를 회전할 수 있습니다",
+                unlockedCongrats: "🎉 금고 해독 성공!",
+                btnNextStage: "다음 금고로 이동",
+                furiganaOn: "독음(후리가나): ON",
+                furiganaOff: "독음(후리가나): OFF",
+                btnHint: "힌트 & 풀이",
+                btnReroll: "새 암호 생성",
+                memoPaperLabel: "발견된 일본어 암호 메모 (단어를 클릭하면 뜻이 표시됩니다)",
+                inspectorDefault: "메모의 일본어 글자를 클릭하면 숫자와 읽는 법을 알려줍니다.",
+                hintTitle: "해독 힌트 & 풀이법",
+                btnLoadCalc: "이 수식을 계산기에 자동 입력",
+                safeScreenTitle: "SAFE PIN INPUT (금고 비밀번호)",
+                safeKanjiLabel: "한자/대자:",
+                safeReadingLabel: "일본어 독음:",
+                calcTitle: "일본어 숫자 계산기 (和算電卓)",
+                modeSafe: "금고 입력",
+                modeCalc: "계산기 모드",
+                calcPosLabel: "단위 한자:",
+                calcKanaLabel: "일본어 발음:",
+                opAdd: "足す(+)",
+                opSub: "引く(−)",
+                opMul: "掛ける(×)",
+                opDiv: "割る(÷)",
+                opEq: "계산(=)",
+                opAc: "초기화",
+                btnTransfer: "계산 결과를 금고 비밀번호 창으로 전송",
+                keySub: {
+                    '1': '(이치)', '2': '(니)', '3': '(산)',
+                    '4': '(욘/시)', '5': '(고)', '6': '(로쿠)',
+                    '7': '(나나)', '8': '(하치)', '9': '(큐우)',
+                    '0': '(레이)', 'star': 'CLR / 지우기', 'hash': 'ENTER / 열기'
+                },
+                kbdNum: "숫자 입력",
+                kbdClr: "지우기",
+                kbdOpen: "금고 열기",
+                modalTitle: "일본어 숫자 · 대자 · 계산식 · 고로아와세 해독 사전",
+                toastTransferred: "계산기 결과({val})를 금고 입력창으로 보냈습니다! #을 눌러 여세요.",
+                toastUnlocked: "금고가 열렸습니다! 정답: {code}",
+                toastWrong: "비밀번호가 틀렸습니다! (입력: {input})",
+                toastEmpty: "먼저 숫자를 입력한 뒤 # (열기) 버튼을 누르세요!",
+                toastFormulaLoaded: "계산기에 수식이 입력되고 결과가 계산되었습니다!",
+                stageTabPrefix: "금고"
+            },
+            ja: {
+                appTitle: "日本語数字・金庫解読ゲーム",
+                appSubtitle: "和算電卓と数字暗号表を使って秘密のメモを解き、3D金庫を開けよう",
+                btnDict: "数字・暗号解読表",
+                scoreLabel: "解読成功:",
+                statusLocked: "LOCKED (施錠中)",
+                statusUnlocked: "UNLOCKED (解錠成功！)",
+                statusError: "ERROR (暗証番号エラー)",
+                btnTts: "音声で読み上げ",
+                cameraHint: "マウスドラッグやタッチで3D金庫を回転できます",
+                unlockedCongrats: "🎉 金庫の解錠に成功しました！",
+                btnNextStage: "次のステージへ",
+                furiganaOn: "ふりがな: ON",
+                furiganaOff: "ふりがな: OFF",
+                btnHint: "ヒントを見る",
+                btnReroll: "新しい暗号を生成",
+                memoPaperLabel: "発見された暗号メモ（文字をクリックすると意味が表示されます）",
+                inspectorDefault: "メモの言葉をタップすると、数字の意味と読み方を表示します。",
+                hintTitle: "解読ヒント＆計算式",
+                btnLoadCalc: "この計算式を電卓に自動入力",
+                safeScreenTitle: "SAFE PIN INPUT (金庫暗証番号)",
+                safeKanjiLabel: "漢数字・大字:",
+                safeReadingLabel: "読み方:",
+                calcTitle: "日本語数字電卓 (和算計算機)",
+                modeSafe: "金庫入力",
+                modeCalc: "電卓モード",
+                calcPosLabel: "漢数字表記:",
+                calcKanaLabel: "読み仮名:",
+                opAdd: "足す(+)",
+                opSub: "引く(−)",
+                opMul: "掛ける(×)",
+                opDiv: "割る(÷)",
+                opEq: "イコール",
+                opAc: "クリア",
+                btnTransfer: "計算結果を金庫の暗証番号へ転送",
+                keySub: {
+                    '1': '(壱)', '2': '(弐)', '3': '(参)',
+                    '4': '(肆)', '5': '(伍)', '6': '(陸)',
+                    '7': '(漆)', '8': '(捌)', '9': '(玖)',
+                    '0': '(零)', 'star': 'CLR / 消去', 'hash': 'ENTER / 解錠'
+                },
+                kbdNum: "数字入力",
+                kbdClr: "消去",
+                kbdOpen: "解錠",
+                modalTitle: "漢数字・大字・計算表現・語呂合わせ解読辞典",
+                toastTransferred: "計算結果({val})を金庫入力欄に転送しました！ #キーで解錠できます。",
+                toastUnlocked: "金庫が開きました！ 正解コード: {code}",
+                toastWrong: "暗証番号が違います！ (入力: {input})",
+                toastEmpty: "数字を入力してから # (解錠) ボタンを押してください！",
+                toastFormulaLoaded: "電卓に計算式を読み込みました！",
+                stageTabPrefix: "金庫"
+            },
+            en: {
+                appTitle: "Japanese Number Vault Cracker",
+                appSubtitle: "Decipher Japanese Kanji memos using the Japanese Calculator & Keypad to unlock the 3D Safe",
+                btnDict: "Japanese Number Guide",
+                scoreLabel: "Solved:",
+                statusLocked: "LOCKED",
+                statusUnlocked: "UNLOCKED!",
+                statusError: "ERROR (WRONG PIN)",
+                btnTts: "Listen (Japanese)",
+                cameraHint: "Drag with mouse or touch to rotate the 3D Vault",
+                unlockedCongrats: "🎉 Vault Unlocked Successfully!",
+                btnNextStage: "Next Stage",
+                furiganaOn: "Furigana: ON",
+                furiganaOff: "Furigana: OFF",
+                btnHint: "Show Hint",
+                btnReroll: "New Random Code",
+                memoPaperLabel: "Discovered Japanese Cipher Memo (Click any word to inspect)",
+                inspectorDefault: "Click on any Japanese character on the memo to see its numeric value and reading.",
+                hintTitle: "Decryption Hint & Solution",
+                btnLoadCalc: "Auto-Load Formula into Calculator",
+                safeScreenTitle: "SAFE PIN INPUT",
+                safeKanjiLabel: "Kanji / Daiji:",
+                safeReadingLabel: "Pronunciation:",
+                calcTitle: "Japanese Number Calculator",
+                modeSafe: "Safe PIN",
+                modeCalc: "Calculator",
+                calcPosLabel: "Positional Kanji:",
+                calcKanaLabel: "Reading:",
+                opAdd: "Tasu (+)",
+                opSub: "Hiku (−)",
+                opMul: "Kakeru (×)",
+                opDiv: "Waru (÷)",
+                opEq: "Equals",
+                opAc: "Clear",
+                btnTransfer: "Send Calculated Result to Safe PIN",
+                keySub: {
+                    '1': '(ichi)', '2': '(ni)', '3': '(san)',
+                    '4': '(yon/shi)', '5': '(go)', '6': '(roku)',
+                    '7': '(nana)', '8': '(hachi)', '9': '(kyuu)',
+                    '0': '(rei/zero)', 'star': 'CLR / Reset', 'hash': 'ENTER / Open'
+                },
+                kbdNum: "Digits",
+                kbdClr: "Clear",
+                kbdOpen: "Unlock",
+                modalTitle: "Japanese Numbers, Daiji, Math & Goroawase Reference",
+                toastTransferred: "Transferred result ({val}) to Safe PIN! Press # to unlock.",
+                toastUnlocked: "Vault Unlocked! Code: {code}",
+                toastWrong: "Incorrect PIN code! (Entered: {input})",
+                toastEmpty: "Enter a PIN code first, then press # to unlock!",
+                toastFormulaLoaded: "Formula loaded and solved in calculator!",
+                stageTabPrefix: "Stage"
+            }
+        };
+
+        /***********************************************************************
+         * 2. JAPANESE NUMBER CONVERSION ENGINE (Arabic <-> Kanji, Daiji, Kana)
+         ***********************************************************************/
+        const JP_DIGITS = {
+            '0': { kanji: '零', maru: '〇', daiji: '零', kana: 'れい', romaji: 'rei', ko: '레이' },
+            '1': { kanji: '一', daiji: '壱', kana: 'いち', romaji: 'ichi', ko: '이치' },
+            '2': { kanji: '二', daiji: '弐', kana: 'に', romaji: 'ni', ko: '니' },
+            '3': { kanji: '三', daiji: '参', kana: 'さん', romaji: 'san', ko: '산' },
+            '4': { kanji: '四', daiji: '肆', kana: 'よん', romaji: 'yon', ko: '욘' },
+            '5': { kanji: '五', daiji: '伍', kana: 'ご', romaji: 'go', ko: '고' },
+            '6': { kanji: '六', daiji: '陸', kana: 'ろく', romaji: 'roku', ko: '로쿠' },
+            '7': { kanji: '七', daiji: '漆', kana: 'なな', romaji: 'nana', ko: '나나' },
+            '8': { kanji: '八', daiji: '捌', kana: 'はち', romaji: 'hachi', ko: '하치' },
+            '9': { kanji: '九', daiji: '玖', kana: 'きゅう', romaji: 'kyuu', ko: '큐우' }
+        };
+
+        // Convert digit string into digit-by-digit Kanji & Reading (for PIN display)
+        function formatPinJapanese(pinStr) {
+            if (!pinStr || pinStr.length === 0) {
+                return { kanji: '-', reading: '-' };
+            }
+            const kanjiArr = [];
+            const daijiArr = [];
+            const kanaArr = [];
+            const koArr = [];
+            for (const ch of pinStr) {
+                if (JP_DIGITS[ch]) {
+                    kanjiArr.push(JP_DIGITS[ch].kanji);
+                    daijiArr.push(JP_DIGITS[ch].daiji);
+                    kanaArr.push(JP_DIGITS[ch].kana);
+                    koArr.push(JP_DIGITS[ch].ko);
+                }
+            }
+            return {
+                kanji: `${kanjiArr.join('・')} (大字: ${daijiArr.join('・')})`,
+                reading: `${kanaArr.join('・')} (${koArr.join('·')})`
+            };
+        }
+
+        // Convert integer (0 to 99,999,999) into full positional Japanese Kanji, Daiji, and Hiragana reading
+        function numberToJapaneseFull(num) {
+            num = Math.round(Number(num));
+            if (isNaN(num)) return { kanji: 'エラー', daiji: 'エラー', kana: 'エラー', ko: '오류' };
+            if (num === 0) {
+                return { kanji: '零', daiji: '零', kana: 'れい (ゼロ)', ko: '레이 (제로)' };
+            }
+            const isNeg = num < 0;
+            let n = Math.abs(num);
+
+            const kanjiDigits = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+            const daijiDigits = ['', '壱', '弐', '参', '肆', '伍', '陸', '漆', '捌', '玖'];
+
+            function convertUnder10000(val) {
+                let kStr = '';
+                let dStr = '';
+                let hStr = '';
+                let koStr = '';
+
+                const th = Math.floor(val / 1000);
+                const hu = Math.floor((val % 1000) / 100);
+                const te = Math.floor((val % 100) / 10);
+                const on = val % 10;
+
+                if (th > 0) {
+                    kStr += (th === 1 ? '' : kanjiDigits[th]) + '千';
+                    dStr += daijiDigits[th] + '仟';
+                    if (th === 1) { hStr += 'せん'; koStr += '센 '; }
+                    else if (th === 3) { hStr += 'さんぜん'; koStr += '산젠 '; }
+                    else if (th === 8) { hStr += 'はっせん'; koStr += '핫센 '; }
+                    else { hStr += JP_DIGITS[th].kana + 'せん'; koStr += JP_DIGITS[th].ko + '센 '; }
+                }
+                if (hu > 0) {
+                    kStr += (hu === 1 ? '' : kanjiDigits[hu]) + '百';
+                    dStr += daijiDigits[hu] + '百';
+                    if (hu === 1) { hStr += 'ひゃく'; koStr += '햐쿠 '; }
+                    else if (hu === 3) { hStr += 'さんびゃく'; koStr += '산뱌쿠 '; }
+                    else if (hu === 6) { hStr += 'ろっぴゃく'; koStr += '롯퍄쿠 '; }
+                    else if (hu === 8) { hStr += 'はっぴゃく'; koStr += '합퍄쿠 '; }
+                    else { hStr += JP_DIGITS[hu].kana + 'ひゃく'; koStr += JP_DIGITS[hu].ko + '햐쿠 '; }
+                }
+                if (te > 0) {
+                    kStr += (te === 1 ? '' : kanjiDigits[te]) + '十';
+                    dStr += daijiDigits[te] + '拾';
+                    if (te === 1) { hStr += 'じゅう'; koStr += '쥬우 '; }
+                    else { hStr += JP_DIGITS[te].kana + 'じゅう'; koStr += JP_DIGITS[te].ko + '쥬우 '; }
+                }
+                if (on > 0) {
+                    kStr += kanjiDigits[on];
+                    dStr += daijiDigits[on];
+                    hStr += JP_DIGITS[on].kana;
+                    koStr += JP_DIGITS[on].ko;
+                }
+                return { kStr, dStr, hStr, koStr: koStr.trim() };
+            }
+
+            let kanjiOut = '';
+            let daijiOut = '';
+            let kanaOut = '';
+            let koOut = '';
+
+            const man = Math.floor(n / 10000);
+            const rem = n % 10000;
+
+            if (man > 0) {
+                const mPart = convertUnder10000(man);
+                kanjiOut += mPart.kStr + '万';
+                daijiOut += mPart.dStr + '萬';
+                kanaOut += mPart.hStr + 'まん';
+                koOut += mPart.koStr + '만 ';
+            }
+            if (rem > 0) {
+                const rPart = convertUnder10000(rem);
+                kanjiOut += rPart.kStr;
+                daijiOut += rPart.dStr;
+                kanaOut += (kanaOut ? ' ' : '') + rPart.hStr;
+                koOut += rPart.koStr;
+            }
+
+            if (isNeg) {
+                kanjiOut = 'マイナス' + kanjiOut;
+                daijiOut = '▲' + daijiOut;
+                kanaOut = 'まいなす ' + kanaOut;
+                koOut = '마이너스 ' + koOut;
+            }
+
+            return {
+                kanji: kanjiOut,
+                daiji: daijiOut,
+                kana: kanaOut.trim(),
+                ko: koOut.trim()
+            };
+        }
+
+        /***********************************************************************
+         * 3. STAGES & PUZZLE DATABASE (5 Structured Stages + Infinite Generator)
+         ***********************************************************************/
+        const STAGES = [
+            {
+                id: 1,
+                code: "7390",
+                tabTitle: { ko: "1. 기초 한자", ja: "1. 基本漢数字", en: "1. Basic Kanji" },
+                title: {
+                    ko: "기초 한자 숫자 메모 (基本漢数字)",
+                    ja: "ステージ1：基本漢数字のメモ",
+                    en: "Stage 1: Basic Kanji Number Memo"
+                },
+                story: {
+                    ko: "금고 옆 책상에서 찢어진 일본어 메모지가 발견되었습니다. 네 개의 한자 숫자를 순서대로 입력하고 마지막에 [# (열기)] 버튼을 눌러 금고를 여세요.",
+                    ja: "金庫の隣で破れたメモが見つかりました。4つの漢数字を順番に入力し、最後に「# (解錠)」ボタンを押して金庫を開けてください。",
+                    en: "A torn Japanese memo was found next to the safe. Enter the 4 Kanji digits in order, then press [# (ENTER)] to unlock the vault."
+                },
+                hint: {
+                    ko: "칠(七=7) · 삼(三=3) · 구(九=9) · 령(零=0) 입니다. 키패드에서 7, 3, 9, 0을 누른 뒤 #을 누르세요.",
+                    ja: "七(7)・三(3)・九(9)・零(0) です。キーパッドで「7390」と入力し、「#」を押してください。",
+                    en: "七 is 7 (nana), 三 is 3 (san), 九 is 9 (kyuu), and 零 is 0 (rei). Type 7390 then press #."
+                },
+                ttsText: "なな、さん、きゅう、れい",
+                calcAuto: null,
+                tokens: [
+                    { surface: "七", ruby: "なな", meaning: { ko: "숫자 7 (나나 / 시치)", ja: "数字の 7 (なな・しち)", en: "Number 7 (nana / shichi)" }, badge: "7" },
+                    { surface: "・", ruby: "", meaning: { ko: "구분점", ja: "区切り", en: "Separator" }, badge: "" },
+                    { surface: "三", ruby: "さん", meaning: { ko: "숫자 3 (산)", ja: "数字の 3 (さん)", en: "Number 3 (san)" }, badge: "3" },
+                    { surface: "・", ruby: "", meaning: { ko: "구분점", ja: "区切り", en: "Separator" }, badge: "" },
+                    { surface: "九", ruby: "きゅう", meaning: { ko: "숫자 9 (큐우 / 쿠)", ja: "数字の 9 (きゅう・く)", en: "Number 9 (kyuu / ku)" }, badge: "9" },
+                    { surface: "・", ruby: "", meaning: { ko: "구분점", ja: "区切り", en: "Separator" }, badge: "" },
+                    { surface: "零", ruby: "れい", meaning: { ko: "숫자 0 (레이 / 제로)", ja: "数字の 0 (れい・ゼロ)", en: "Number 0 (rei / zero)" }, badge: "0" }
+                ]
+            },
+            {
+                id: 2,
+                code: "3645",
+                tabTitle: { ko: "2. 일본어 계산식", ja: "2. 日本語計算式", en: "2. Japanese Math" },
+                title: {
+                    ko: "일본어 사칙연산 영수증 (和算計算メモ)",
+                    ja: "ステージ2：日本語計算式の領収書",
+                    en: "Stage 2: Japanese Arithmetic Receipt"
+                },
+                story: {
+                    ko: "금고 비밀번호가 일본어 수식으로 적혀 있습니다. 오른쪽 [일본어 숫자 계산기]를 사용해 계산한 뒤, 결과를 금고 입력창으로 보내고 [#]을 누르세요!",
+                    ja: "暗証番号が日本語の計算式で書かれています。右側の「日本語数字電卓」で計算し、結果を金庫に転送して「#」を押してください！",
+                    en: "The vault PIN is written as a Japanese math equation. Use the Japanese Number Calculator on the right to compute it, then press [#]!"
+                },
+                hint: {
+                    ko: "百二十(120) 掛ける(×) 三十(30) 足す(+) 四十五(45) = 120 × 30 + 45 = 3645 입니다.",
+                    ja: "百二十(120) × 三十(30) ＋ 四十五(45) ＝ 3645 となります。",
+                    en: "百二十 (120) × 三十 (30) + 四十五 (45) = 3645."
+                },
+                ttsText: "ひゃくにじゅう かける さんじゅう たす よんじゅうご は いくつ？",
+                calcAuto: { expr: "120*30+45", result: 3645, jpText: "百二十 × 三十 + 四十五 = 三千六百四十五" },
+                tokens: [
+                    { surface: "百二十", ruby: "ひゃくにじゅう", meaning: { ko: "100(百) + 20(二十) = 120", ja: "120 (ひゃくにじゅう)", en: "100 + 20 = 120" }, badge: "120" },
+                    { surface: "掛ける", ruby: "かける", meaning: { ko: "곱하기 (× / Multiply)", ja: "掛け算 (×)", en: "Multiply (×)" }, badge: "×" },
+                    { surface: "三十", ruby: "さんじゅう", meaning: { ko: "3(三) × 10(十) = 30", ja: "30 (さんじゅう)", en: "3 × 10 = 30" }, badge: "30" },
+                    { surface: "足す", ruby: "たす", meaning: { ko: "더하기 (+ / Plus)", ja: "足し算 (＋)", en: "Plus (+)" }, badge: "+" },
+                    { surface: "四十五", ruby: "よんじゅうご", meaning: { ko: "40(四十) + 5(五) = 45", ja: "45 (よんじゅうご)", en: "40 + 5 = 45" }, badge: "45" }
+                ]
+            },
+            {
+                id: 3,
+                code: "8251",
+                tabTitle: { ko: "3. 은행 대자(大字)", ja: "3. 大字・銀行数字", en: "3. Bank Daiji" },
+                title: {
+                    ko: "고전 은행 금고 대자 장부 (大字暗号)",
+                    ja: "ステージ3：古い銀行の大字（だいじ）帳簿",
+                    en: "Stage 3: Antique Bank Ledger (Daiji Numerals)"
+                },
+                story: {
+                    ko: "일본의 은행이나 고전 금고에서는 숫자 위조를 막기 위해 복잡한 한자인 '대자(大字)'를 사용합니다. 키패드 버튼의 괄호 안 한자나 상단 [해독표]를 참고해 해독하세요.",
+                    ja: "日本の銀行や古い金庫では、改ざん防止のために「大字（だいじ）」が使われます。キーパッドの括弧内の文字や解読表を参考に解読してください。",
+                    en: "Japanese banks and antique vaults use formal 'Daiji' Kanji to prevent forgery. Check the characters on the keypad buttons or Reference Guide!"
+                },
+                hint: {
+                    ko: "捌(8·하치) · 弐(2·니) · 伍(5·고) · 壱(1·이치) → 정답은 8251 입니다.",
+                    ja: "捌(8)・弐(2)・伍(5)・壱(1) → 答えは「8251」です。",
+                    en: "捌 = 8, 弐 = 2, 伍 = 5, 壱 = 1 → Enter 8251 then press #."
+                },
+                ttsText: "はち、に、ご、いち",
+                calcAuto: null,
+                tokens: [
+                    { surface: "捌", ruby: "はち", meaning: { ko: "팔(八)의 대자 = 숫자 8", ja: "「八」の大字 = 8", en: "Formal Daiji for 8 (hachi)" }, badge: "8" },
+                    { surface: "・", ruby: "", meaning: { ko: "구분점", ja: "区切り", en: "Separator" }, badge: "" },
+                    { surface: "弐", ruby: "に", meaning: { ko: "이(二)의 대자 = 숫자 2", ja: "「二」の大字 = 2", en: "Formal Daiji for 2 (ni)" }, badge: "2" },
+                    { surface: "・", ruby: "", meaning: { ko: "구분점", ja: "区切り", en: "Separator" }, badge: "" },
+                    { surface: "伍", ruby: "ご", meaning: { ko: "오(五)의 대자 = 숫자 5", ja: "「五」の大字 = 5", en: "Formal Daiji for 5 (go)" }, badge: "5" },
+                    { surface: "・", ruby: "", meaning: { ko: "구분점", ja: "区切り", en: "Separator" }, badge: "" },
+                    { surface: "壱", ruby: "いち", meaning: { ko: "일(一)의 대자 = 숫자 1", ja: "「一」の大字 = 1", en: "Formal Daiji for 1 (ichi)" }, badge: "1" }
+                ]
+            },
+            {
+                id: 4,
+                code: "464939",
+                tabTitle: { ko: "4. 고로아와세 암호", ja: "4. 語呂合わせ", en: "4. Goroawase" },
+                title: {
+                    ko: "고로아와세(語呂合わせ) 발음 말장난 메모",
+                    ja: "ステージ4：語呂合わせ（ごろあわせ）暗号メモ",
+                    en: "Stage 4: Goroawase (Japanese Phonetic Wordplay)"
+                },
+                story: {
+                    ko: "일본에서는 숫자 발음을 조합해 단어를 만드는 '고로아와세'를 금고나 사물함 비밀번호로 자주 씁니다. 메모의 두 단어를 6자리 숫자로 바꿔 [#]을 누르세요!",
+                    ja: "日本では数字の読み方を組み合わせた「語呂合わせ」がよく暗証番号に使われます。2つの言葉を6桁の数字に変換して「#」を押してください！",
+                    en: "In Japan, 'Goroawase' (phonetic number wordplay) is famous for PIN codes. Convert the two phrases into a 6-digit code and press [#]!"
+                },
+                hint: {
+                    ko: "よろしく = よ(4)·ろ(6)·し(4)·く(9) = 4649, サンキュー = サン(3)·キュー(9) = 39. 이어서 쓰면 464939 입니다!",
+                    ja: "よろしく＝よ(4)ろ(6)し(4)く(9)＝4649、サンキュー＝サン(3)キュー(9)＝39。繋げると「464939」になります！",
+                    en: "Yoroshiku = yo(4)-ro(6)-shi(4)-ku(9) = 4649. Sankyuu = san(3)-kyuu(9) = 39. Combined: 464939!"
+                },
+                ttsText: "よろしく、さんきゅう",
+                calcAuto: null,
+                tokens: [
+                    { surface: "よ", ruby: "4", meaning: { ko: "4 (よん의 첫소리 よ = 4)", ja: "4 (よんの「よ」)", en: "4 (from 'yon')" }, badge: "4" },
+                    { surface: "ろ", ruby: "6", meaning: { ko: "6 (ろく의 첫소리 ろ = 6)", ja: "6 (ろくの「ろ」)", en: "6 (from 'roku')" }, badge: "6" },
+                    { surface: "し", ruby: "4", meaning: { ko: "4 (四의 음독 し = 4)", ja: "4 (四の読み「し」)", en: "4 (from 'shi')" }, badge: "4" },
+                    { surface: "く", ruby: "9", meaning: { ko: "9 (九의 음독 く = 9)", ja: "9 (九の読み「く」)", en: "9 (from 'ku')" }, badge: "9" },
+                    { surface: "＋", ruby: "", meaning: { ko: "이어서 입력", ja: "続けて入力", en: "Followed by" }, badge: "" },
+                    { surface: "サン", ruby: "3", meaning: { ko: "3 (三의 발음 さん = 3)", ja: "3 (三の読み「サン」)", en: "3 (from 'san')" }, badge: "3" },
+                    { surface: "キュー", ruby: "9", meaning: { ko: "9 (九의 발음 きゅう = 9)", ja: "9 (九の読み「キュー」)", en: "9 (from 'kyuu')" }, badge: "9" }
+                ]
+            },
+            {
+                id: 5,
+                code: "7320",
+                tabTitle: { ko: "5. 마스터 금고", ja: "5. マスター金庫", en: "5. Master Vault" },
+                title: {
+                    ko: "마스터 금고: 대자 단위 & 복합 수식 (最終金庫)",
+                    ja: "ステージ5：マスター金庫（大字と四則演算の複合）",
+                    en: "Stage 5: Master Vault (Daiji Units & Compound Math)"
+                },
+                story: {
+                    ko: "마지막 마스터 금고입니다! 대자 단위(百=100, 拾=10)가 포함된 곱셈과 뺄셈 수식을 계산기로 풀어 금고의 4자리 비밀 코드를 알아내세요.",
+                    ja: "最終ステージです！大字の単位（百＝100、拾＝10）を含む掛け算と引き算を計算機で解き、4桁のコードを入力してください。",
+                    en: "The final Master Vault! Solve this compound equation combining formal Daiji units (百=100, 拾=10) and arithmetic to find the 4-digit code."
+                },
+                hint: {
+                    ko: "弐百伍拾(250) 掛ける(×) 参拾(30) 引く(−) 壱百捌拾(180) = 7500 − 180 = 7320 입니다!",
+                    ja: "弐百伍拾(250) × 参拾(30) − 壱百捌拾(180) ＝ 7500 − 180 ＝ 7320 です！",
+                    en: "弐百伍拾 (250) × 参拾 (30) − 壱百捌拾 (180) = 7500 − 180 = 7320!"
+                },
+                ttsText: "にひゃくごじゅう かける さんじゅう ひく ひゃくはちじゅう",
+                calcAuto: { expr: "250*30-180", result: 7320, jpText: "弐百伍拾 × 参拾 − 壱百捌拾 = 七千三百二十" },
+                tokens: [
+                    { surface: "弐百伍拾", ruby: "にひゃくごじゅう", meaning: { ko: "2(弐)×100(百) + 5(伍)×10(拾) = 250", ja: "250 (にひゃくごじゅう)", en: "2×100 + 5×10 = 250" }, badge: "250" },
+                    { surface: "掛ける", ruby: "かける", meaning: { ko: "곱하기 (×)", ja: "掛け算 (×)", en: "Multiply (×)" }, badge: "×" },
+                    { surface: "参拾", ruby: "さんじゅう", meaning: { ko: "3(参) × 10(拾) = 30", ja: "30 (さんじゅう)", en: "3 × 10 = 30" }, badge: "30" },
+                    { surface: "引く", ruby: "ひく", meaning: { ko: "빼기 (−)", ja: "引き算 (−)", en: "Minus (−)" }, badge: "−" },
+                    { surface: "壱百捌拾", ruby: "ひゃくはちじゅう", meaning: { ko: "1(壱)×100(百) + 8(捌)×10(拾) = 180", ja: "180 (ひゃくはちじゅう)", en: "1×100 + 8×10 = 180" }, badge: "180" }
+                ]
+            },
+            {
+                id: 6,
+                code: "0000", // Dynamically generated
+                tabTitle: { ko: "∞ 무한 랜덤 금고", ja: "∞ 無限ランダム", en: "∞ Infinite Mode" },
+                title: {
+                    ko: "무한 랜덤 금고 (無限ランダム暗号生成)",
+                    ja: "無限ランダム金庫モード",
+                    en: "Infinite Random Vault Mode"
+                },
+                story: {
+                    ko: "새로운 일본어 숫자 암호가 무한히 생성됩니다! [새 암호 생성] 버튼을 누를 때마다 한자·대자·계산식·고로아와세 문제가 무작위로 출제됩니다.",
+                    ja: "新しい日本語数字暗号がランダムに生成されます！「新しい暗号を生成」ボタンを押すたびに新しい問題に挑戦できます。",
+                    en: "Endless procedurally generated Japanese number puzzles! Click [New Random Code] anytime for a fresh Kanji, Daiji, or Math challenge."
+                },
+                hint: { ko: "", ja: "", en: "" },
+                ttsText: "",
+                calcAuto: null,
+                tokens: []
+            }
+        ];
+
+        /***********************************************************************
+         * 4. PROCEDURAL RANDOM PUZZLE GENERATOR (For Stage 6 & Reroll)
+         ***********************************************************************/
+        function generateRandomPuzzle(modeType = null) {
+            const types = ['kanji', 'math', 'daiji', 'goroawase'];
+            const chosenType = modeType || types[Math.floor(Math.random() * types.length)];
+
+            if (chosenType === 'kanji') {
+                let code = "";
+                const tokens = [];
+                const ttsArr = [];
+                for (let i = 0; i < 4; i++) {
+                    const d = String(Math.floor(Math.random() * 10));
+                    code += d;
+                    const info = JP_DIGITS[d];
+                    if (i > 0) tokens.push({ surface: "・", ruby: "", meaning: { ko: "구분점", ja: "区切り", en: "Separator" }, badge: "" });
+                    tokens.push({
+                        surface: info.kanji,
+                        ruby: info.kana,
+                        meaning: { ko: `숫자 ${d} (${info.ko})`, ja: `数字の ${d} (${info.kana})`, en: `Digit ${d} (${info.romaji})` },
+                        badge: d
+                    });
+                    ttsArr.push(info.kana);
+                }
+                return {
+                    code,
+                    ttsText: ttsArr.join('、'),
+                    calcAuto: null,
+                    tokens,
+                    hint: {
+                        ko: `각 한자를 숫자로 바꾸면 ${code} 입니다. ${code}#을 입력하세요.`,
+                        ja: `漢数字を順番に読むと「${code}」になります。`,
+                        en: `Converting each Kanji digit in order gives ${code}.`
+                    }
+                };
+            } else if (chosenType === 'daiji') {
+                let code = "";
+                const tokens = [];
+                const ttsArr = [];
+                for (let i = 0; i < 4; i++) {
+                    const d = String(Math.floor(Math.random() * 10));
+                    code += d;
+                    const info = JP_DIGITS[d];
+                    if (i > 0) tokens.push({ surface: "・", ruby: "", meaning: { ko: "구분점", ja: "区切り", en: "Separator" }, badge: "" });
+                    tokens.push({
+                        surface: info.daiji,
+                        ruby: info.kana,
+                        meaning: { ko: `대자 숫자 ${d} (${info.ko})`, ja: `大字の ${d} (${info.kana})`, en: `Daiji for ${d} (${info.romaji})` },
+                        badge: d
+                    });
+                    ttsArr.push(info.kana);
+                }
+                return {
+                    code,
+                    ttsText: ttsArr.join('、'),
+                    calcAuto: null,
+                    tokens,
+                    hint: {
+                        ko: `은행용 대자 한자를 해독하면 ${code} 입니다.`,
+                        ja: `大字を数字に変換すると「${code}」です。`,
+                        en: `Converting the bank Daiji numerals gives ${code}.`
+                    }
+                };
+            } else if (chosenType === 'goroawase') {
+                const goroPool = [
+                    { code: "4649", surface: "よろしく", ruby: "4-6-4-9", desc: "よ(4)ろ(6)し(4)く(9)" },
+                    { code: "2525", surface: "ニコニコ", ruby: "2-5-2-5", desc: "ニ(2)コ(5)ニ(2)コ(5)" },
+                    { code: "0840", surface: "おはよう", ruby: "0-8-4-0", desc: "お(0)は(8)よ(4)う(0)" },
+                    { code: "5963", surface: "ご苦労さん", ruby: "5-9-6-3", desc: "ご(5)く(9)ろ(6)さん(3)" },
+                    { code: "1192", surface: "いい国", ruby: "1-1-9-2", desc: "い(1)い(1)く(9)に(2)" },
+                    { code: "39", surface: "サンキュー", ruby: "3-9", desc: "サン(3)キュー(9)" }
+                ];
+                const pick = goroPool[Math.floor(Math.random() * goroPool.length)];
+                return {
+                    code: pick.code,
+                    ttsText: pick.surface,
+                    calcAuto: null,
+                    tokens: [
+                        {
+                            surface: pick.surface,
+                            ruby: pick.ruby,
+                            meaning: { ko: `고로아와세: ${pick.desc} = ${pick.code}`, ja: `語呂合わせ: ${pick.desc} = ${pick.code}`, en: `Goroawase: ${pick.desc} = ${pick.code}` },
+                            badge: pick.code
+                        }
+                    ],
+                    hint: {
+                        ko: `${pick.surface}의 발음 고로아와세는 ${pick.desc} → ${pick.code} 입니다.`,
+                        ja: `「${pick.surface}」の語呂合わせは ${pick.desc} → ${pick.code} です。`,
+                        en: `Phonetic wordplay for ${pick.surface} is ${pick.desc} -> ${pick.code}.`
+                    }
+                };
+            } else {
+                // Math expression generating a 4-digit answer
+                const a = (Math.floor(Math.random() * 8) + 2) * 10; // 20..90
+                const b = (Math.floor(Math.random() * 8) + 12) * 5; // 60..95
+                const c = Math.floor(Math.random() * 89) + 11; // 11..99
+                const ans = a * b + c;
+                const jpA = numberToJapaneseFull(a);
+                const jpB = numberToJapaneseFull(b);
+                const jpC = numberToJapaneseFull(c);
+                const jpAns = numberToJapaneseFull(ans);
+                return {
+                    code: String(ans),
+                    ttsText: `${jpA.kana} かける ${jpB.kana} たす ${jpC.kana}`,
+                    calcAuto: { expr: `${a}*${b}+${c}`, result: ans, jpText: `${jpA.kanji} × ${jpB.kanji} + ${jpC.kanji} = ${jpAns.kanji}` },
+                    tokens: [
+                        { surface: jpA.kanji, ruby: jpA.kana, meaning: { ko: `숫자 ${a}`, ja: `${a}`, en: `Number ${a}` }, badge: String(a) },
+                        { surface: "掛ける", ruby: "かける", meaning: { ko: "곱하기 (×)", ja: "掛け算 (×)", en: "Multiply (×)" }, badge: "×" },
+                        { surface: jpB.kanji, ruby: jpB.kana, meaning: { ko: `숫자 ${b}`, ja: `${b}`, en: `Number ${b}` }, badge: String(b) },
+                        { surface: "足す", ruby: "たす", meaning: { ko: "더하기 (+)", ja: "足し算 (+)", en: "Plus (+)" }, badge: "+" },
+                        { surface: jpC.kanji, ruby: jpC.kana, meaning: { ko: `숫자 ${c}`, ja: `${c}`, en: `Number ${c}` }, badge: String(c) }
+                    ],
+                    hint: {
+                        ko: `${a} × ${b} + ${c} = ${ans} 입니다. 계산기에서 계산 후 #을 누르세요.`,
+                        ja: `${a} × ${b} ＋ ${c} ＝ ${ans} です。`,
+                        en: `${a} × ${b} + ${c} = ${ans}.`
+                    }
+                };
+            }
+        }
+
+        /***********************************************************************
+         * 5. APPLICATION STATE
+         ***********************************************************************/
+        let currentLang = 'ko';
+        let currentStageIndex = 0; // 0..5
+        let solvedStages = new Set();
+        let showFurigana = true;
+        let soundEnabled = true;
+
+        // Input routing: 'safe' or 'calc'
+        let inputTarget = 'safe';
+
+        // Safe PIN state
+        let safePinBuffer = "";
+        let isVaultOpen = false;
+
+        // Calculator state
+        let calcCurrentInput = "0";
+        let calcPreviousValue = null;
+        let calcPendingOp = null;
+        let calcResetNext = false;
+        let calcExpressionLog = "";
+
+        /***********************************************************************
+         * 6. WEB AUDIO API SYNTHESIZER (DTMF Keypad, Safe Mechanics, Fanfare)
+         ***********************************************************************/
+        let audioCtx = null;
+
+        const DTMF_FREQS = {
+            '1': [697, 1209], '2': [697, 1336], '3': [697, 1477],
+            '4': [770, 1209], '5': [770, 1336], '6': [770, 1477],
+            '7': [852, 1209], '8': [852, 1336], '9': [852, 1477],
+            '*': [941, 1209], '0': [941, 1336], '#': [941, 1477]
+        };
+
+        function ensureAudio() {
+            if (!soundEnabled) return null;
+            if (!audioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) audioCtx = new AudioContextClass();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playDtmfTone(key) {
+            const ctx = ensureAudio();
+            if (!ctx || !DTMF_FREQS[key]) return;
+            const [f1, f2] = DTMF_FREQS[key];
+            const now = ctx.currentTime;
+
+            const osc1 = ctx.createOscillator();
+            const osc2 = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            osc1.type = 'sine';
+            osc2.type = 'sine';
+            osc1.frequency.setValueAtTime(f1, now);
+            osc2.frequency.setValueAtTime(f2, now);
+
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+
+            osc1.connect(gain);
+            osc2.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc1.start(now);
+            osc2.start(now);
+            osc1.stop(now + 0.15);
+            osc2.stop(now + 0.15);
+        }
+
+        function playCalcClick() {
+            const ctx = ensureAudio();
+            if (!ctx) return;
+            const now = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(520, now);
+            osc.frequency.exponentialRampToValueAtTime(180, now + 0.05);
+            gain.gain.setValueAtTime(0.09, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.055);
+        }
+
+        function playSafeUnlockSound() {
+            const ctx = ensureAudio();
+            if (!ctx) return;
+            const now = ctx.currentTime;
+
+            // 1. Metallic bolt clunk
+            for (let i = 0; i < 3; i++) {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(140 + i * 35, now + i * 0.1);
+                osc.frequency.exponentialRampToValueAtTime(55, now + i * 0.1 + 0.09);
+                gain.gain.setValueAtTime(0.12, now + i * 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.09);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now + i * 0.1);
+                osc.stop(now + i * 0.1 + 0.095);
+            }
+
+            // 2. Victory Fanfare Chord (C5 - E5 - G5 - C6)
+            const notes = [523.25, 659.25, 783.99, 1046.50];
+            notes.forEach((freq, idx) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                const startT = now + 0.32 + idx * 0.09;
+                osc.frequency.setValueAtTime(freq, startT);
+                gain.gain.setValueAtTime(0.11, startT);
+                gain.gain.exponentialRampToValueAtTime(0.001, startT + 0.55);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(startT);
+                osc.stop(startT + 0.56);
+            });
+        }
+
+        function playSafeErrorSound() {
+            const ctx = ensureAudio();
+            if (!ctx) return;
+            const now = ctx.currentTime;
+            [0, 0.16].forEach(offset => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(155, now + offset);
+                gain.gain.setValueAtTime(0.12, now + offset);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.13);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now + offset);
+                osc.stop(now + offset + 0.14);
+            });
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('icon-sound');
+            if (soundEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-emerald-400';
+                playCalcClick();
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+            }
+        }
+
+        function speakCurrentMemo() {
+            const stage = STAGES[currentStageIndex];
+            if (!stage || !('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const utter = new SpeechSynthesisUtterance(stage.ttsText || stage.code);
+            utter.lang = 'ja-JP';
+            utter.rate = 0.9;
+            window.speechSynthesis.speak(utter);
+        }
+
+        /***********************************************************************
+         * 7. THREE.JS INTERACTIVE 3D VAULT / SAFE ENGINE
+         ***********************************************************************/
+        let scene, camera, renderer;
+        let vaultGroup, doorPivotGroup, wheelGroup, statusLedMesh, statusPointLight;
+        let safeScreenCanvas, safeScreenCtx, safeScreenTexture;
+        let lockingBolts = [];
+        let treasureParticles = [];
+
+        // Animation targets
+        let targetDoorAngle = 0; // 0 = closed, -Math.PI * 0.62 = open
+        let currentDoorAngle = 0;
+        let targetWheelAngle = 0;
+        let currentWheelAngle = 0;
+        let shakeTimer = 0;
+
+        // Orbit controls state
+        let isDragging3D = false;
+        let prevPointer = { x: 0, y: 0 };
+        let targetVaultRot = { x: 0.08, y: -0.22 };
+        let currentVaultRot = { x: 0.08, y: -0.22 };
+
+        function initThreeVault() {
+            const container = document.getElementById('vault-canvas-container');
+            if (!container) return;
+
+            try {
+                const width = container.clientWidth || 600;
+                const height = container.clientHeight || 320;
+
+                scene = new THREE.Scene();
+
+                camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
+                camera.position.set(0, 0.2, 6.2);
+                camera.lookAt(0, 0, 0);
+
+                renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                renderer.setSize(width, height);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                renderer.shadowMap.enabled = true;
+                container.innerHTML = '';
+                container.appendChild(renderer.domElement);
+
+                // Lighting
+                const ambientLight = new THREE.AmbientLight(0xdbeafe, 0.75);
+                scene.add(ambientLight);
+
+                const mainLight = new THREE.DirectionalLight(0xffffff, 1.15);
+                mainLight.position.set(4, 6, 5);
+                scene.add(mainLight);
+
+                const warmRimLight = new THREE.DirectionalLight(0xf59e0b, 0.6);
+                warmRimLight.position.set(-5, -3, 3);
+                scene.add(warmRimLight);
+
+                // Root Vault Group
+                vaultGroup = new THREE.Group();
+                scene.add(vaultGroup);
+
+                // Materials
+                const bodyMat = new THREE.MeshStandardMaterial({
+                    color: 0x1e293b,
+                    metalness: 0.8,
+                    roughness: 0.3
+                });
+                const trimMat = new THREE.MeshStandardMaterial({
+                    color: 0x334155,
+                    metalness: 0.85,
+                    roughness: 0.25
+                });
+                const darkInteriorMat = new THREE.MeshStandardMaterial({
+                    color: 0x090d16,
+                    metalness: 0.4,
+                    roughness: 0.8
+                });
+                const goldMat = new THREE.MeshStandardMaterial({
+                    color: 0xfbbf24,
+                    metalness: 0.9,
+                    roughness: 0.18,
+                    emissive: 0x78350f,
+                    emissiveIntensity: 0.2
+                });
+                const chromeMat = new THREE.MeshStandardMaterial({
+                    color: 0xe2e8f0,
+                    metalness: 0.95,
+                    roughness: 0.12
+                });
+
+                // Build Recessed Hollow Vault Body (Back, Top, Bottom, Left, Right walls)
+                const wallBack = new THREE.Mesh(new THREE.BoxGeometry(3.2, 3.0, 0.3), bodyMat);
+                wallBack.position.set(0, 0, -1.1);
+                vaultGroup.add(wallBack);
+
+                const wallTop = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.35, 2.2), bodyMat);
+                wallTop.position.set(0, 1.325, -0.15);
+                vaultGroup.add(wallTop);
+
+                const wallBot = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.35, 2.2), bodyMat);
+                wallBot.position.set(0, -1.325, -0.15);
+                vaultGroup.add(wallBot);
+
+                const wallLeft = new THREE.Mesh(new THREE.BoxGeometry(0.35, 2.3, 2.2), bodyMat);
+                wallLeft.position.set(-1.425, 0, -0.15);
+                vaultGroup.add(wallLeft);
+
+                const wallRight = new THREE.Mesh(new THREE.BoxGeometry(0.35, 2.3, 2.2), bodyMat);
+                wallRight.position.set(1.425, 0, -0.15);
+                vaultGroup.add(wallRight);
+
+                // Interior Shelf & Treasure (Gold Bars + Secret Scroll inside Vault)
+                const shelf = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.08, 1.6), darkInteriorMat);
+                shelf.position.set(0, -0.2, -0.35);
+                vaultGroup.add(shelf);
+
+                // Gold Bullion Stack on bottom & shelf
+                for (let row = 0; row < 2; row++) {
+                    for (let col = -1; col <= 1; col++) {
+                        const bar = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.22, 0.9), goldMat);
+                        bar.position.set(col * 0.65, -0.98 + row * 0.24, -0.45);
+                        vaultGroup.add(bar);
+                    }
+                }
+
+                // Glowing Ruby/Jewel & Secret Ledger on upper shelf
+                const gemGeo = new THREE.OctahedronGeometry(0.32, 0);
+                const gemMat = new THREE.MeshStandardMaterial({
+                    color: 0x38bdf8,
+                    emissive: 0x0284c7,
+                    emissiveIntensity: 0.6,
+                    metalness: 0.3,
+                    roughness: 0.1
+                });
+                const gemMesh = new THREE.Mesh(gemGeo, gemMat);
+                gemMesh.position.set(-0.45, 0.22, -0.35);
+                vaultGroup.add(gemMesh);
+
+                const scrollMesh = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.14, 0.14, 0.9, 16),
+                    new THREE.MeshStandardMaterial({ color: 0xfef3c7, roughness: 0.5 })
+                );
+                scrollMesh.rotation.z = Math.PI / 2;
+                scrollMesh.position.set(0.45, 0.05, -0.35);
+                vaultGroup.add(scrollMesh);
+
+                // Interior warm spotlight (illuminates gold when opened)
+                const interiorLight = new THREE.PointLight(0xfbbf24, 1.5, 4);
+                interiorLight.position.set(0, 0.8, -0.3);
+                vaultGroup.add(interiorLight);
+
+                // DOOR PIVOT GROUP (Hinged on the right side of the vault at x = +1.35, z = +0.85)
+                doorPivotGroup = new THREE.Group();
+                doorPivotGroup.position.set(1.32, 0, 0.88);
+                vaultGroup.add(doorPivotGroup);
+
+                // Heavy Vault Door Plate (offset relative to hinge)
+                const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(2.68, 2.42, 0.32), trimMat);
+                doorMesh.position.set(-1.32, 0, 0);
+                doorPivotGroup.add(doorMesh);
+
+                // Outer Bezel Frame on Door
+                const bezelMesh = new THREE.Mesh(new THREE.BoxGeometry(2.42, 2.16, 0.08), bodyMat);
+                bezelMesh.position.set(-1.32, 0, 0.18);
+                doorPivotGroup.add(bezelMesh);
+
+                // Hinges on the right edge
+                [-0.75, 0.75].forEach(hy => {
+                    const hinge = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.42, 16), chromeMat);
+                    hinge.position.set(0, hy, 0.08);
+                    doorPivotGroup.add(hinge);
+                });
+
+                // Locking Bolts on left edge of door (visible when door opens)
+                lockingBolts = [];
+                [-0.65, 0, 0.65].forEach(by => {
+                    const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.5, 16), chromeMat);
+                    bolt.rotation.z = Math.PI / 2;
+                    bolt.position.set(-2.58, by, -0.02);
+                    doorPivotGroup.add(bolt);
+                    lockingBolts.push(bolt);
+                });
+
+                // 3D Digital Screen CanvasTexture on the Door
+                safeScreenCanvas = document.createElement('canvas');
+                safeScreenCanvas.width = 512;
+                safeScreenCanvas.height = 192;
+                safeScreenCtx = safeScreenCanvas.getContext('2d');
+                safeScreenTexture = new THREE.CanvasTexture(safeScreenCanvas);
+
+                const screenMesh = new THREE.Mesh(
+                    new THREE.PlaneGeometry(1.15, 0.44),
+                    new THREE.MeshBasicMaterial({ map: safeScreenTexture })
+                );
+                screenMesh.position.set(-0.82, 0.55, 0.23);
+                doorPivotGroup.add(screenMesh);
+
+                // Status LED IndicatorSphere on Door
+                statusLedMesh = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.08, 16, 16),
+                    new THREE.MeshStandardMaterial({
+                        color: 0xef4444,
+                        emissive: 0xef4444,
+                        emissiveIntensity: 0.9
+                    })
+                );
+                statusLedMesh.position.set(-1.62, 0.55, 0.22);
+                doorPivotGroup.add(statusLedMesh);
+
+                statusPointLight = new THREE.PointLight(0xef4444, 0.8, 2.5);
+                statusPointLight.position.set(-1.62, 0.55, 0.4);
+                doorPivotGroup.add(statusPointLight);
+
+                // Rotating 5-Spoke Wheel Handle on the Door
+                wheelGroup = new THREE.Group();
+                wheelGroup.position.set(-1.8, -0.25, 0.32);
+                doorPivotGroup.add(wheelGroup);
+
+                const hubMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.22, 24), goldMat);
+                hubMesh.rotation.x = Math.PI / 2;
+                wheelGroup.add(hubMesh);
+
+                const ringMesh = new THREE.Mesh(new THREE.TorusGeometry(0.46, 0.055, 16, 36), chromeMat);
+                wheelGroup.add(ringMesh);
+
+                for (let i = 0; i < 5; i++) {
+                    const angle = (i * Math.PI * 2) / 5;
+                    const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.95, 12), chromeMat);
+                    spoke.rotation.z = angle;
+                    spoke.position.set(Math.cos(angle + Math.PI / 2) * 0.22, Math.sin(angle + Math.PI / 2) * 0.22, 0);
+                    wheelGroup.add(spoke);
+
+                    const knob = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.16, 12), goldMat);
+                    knob.rotation.x = Math.PI / 2;
+                    knob.position.set(Math.cos(angle + Math.PI / 2) * 0.46, Math.sin(angle + Math.PI / 2) * 0.46, 0.08);
+                    wheelGroup.add(knob);
+                }
+
+                // Decorative Mini Keypad Plate on 3D Door
+                const padPlate = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.92, 0.06), new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.4 }));
+                padPlate.position.set(-0.75, -0.28, 0.22);
+                doorPivotGroup.add(padPlate);
+
+                // Sparkle Particle Pool for Unlock Celebration
+                const partGeo = new THREE.BufferGeometry();
+                const pCount = 45;
+                const posArr = new Float32Array(pCount * 3);
+                for (let i = 0; i < pCount * 3; i++) posArr[i] = 0;
+                partGeo.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
+                const partMat = new THREE.PointsMaterial({ color: 0xfbbf24, size: 0.12, transparent: true, opacity: 0.85 });
+                const particleSystem = new THREE.Points(partGeo, partMat);
+                vaultGroup.add(particleSystem);
+                treasureParticles = { system: particleSystem, velocities: [] };
+                for (let i = 0; i < pCount; i++) {
+                    treasureParticles.velocities.push({
+                        x: (Math.random() - 0.5) * 0.05,
+                        y: (Math.random() - 0.3) * 0.05,
+                        z: Math.random() * 0.06 + 0.01
+                    });
+                }
+
+                // Pointer / Touch Drag Events for 3D Rotation
+                const domEl = renderer.domElement;
+                domEl.addEventListener('mousedown', (e) => {
+                    isDragging3D = true;
+                    prevPointer = { x: e.clientX, y: e.clientY };
+                });
+                window.addEventListener('mousemove', (e) => {
+                    if (!isDragging3D) return;
+                    const dx = e.clientX - prevPointer.x;
+                    const dy = e.clientY - prevPointer.y;
+                    targetVaultRot.y = Math.max(-0.85, Math.min(0.85, targetVaultRot.y + dx * 0.007));
+                    targetVaultRot.x = Math.max(-0.35, Math.min(0.45, targetVaultRot.x + dy * 0.006));
+                    prevPointer = { x: e.clientX, y: e.clientY };
+                });
+                window.addEventListener('mouseup', () => { isDragging3D = false; });
+
+                domEl.addEventListener('touchstart', (e) => {
+                    if (e.touches.length === 1) {
+                        isDragging3D = true;
+                        prevPointer = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                    }
+                }, { passive: true });
+                domEl.addEventListener('touchmove', (e) => {
+                    if (!isDragging3D || e.touches.length !== 1) return;
+                    const dx = e.touches[0].clientX - prevPointer.x;
+                    const dy = e.touches[0].clientY - prevPointer.y;
+                    targetVaultRot.y = Math.max(-0.85, Math.min(0.85, targetVaultRot.y + dx * 0.007));
+                    targetVaultRot.x = Math.max(-0.35, Math.min(0.45, targetVaultRot.x + dy * 0.006));
+                    prevPointer = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }, { passive: true });
+                domEl.addEventListener('touchend', () => { isDragging3D = false; });
+
+                window.addEventListener('resize', onWindowResize);
+                update3DSafeScreenTexture();
+            } catch (err) {
+                console.error("WebGL fallback triggered:", err);
+                container.innerHTML = `<div class="w-full h-full flex items-center justify-center text-amber-400 font-bold">3D 금고 뷰어 (WebGL)</div>`;
+            }
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('vault-canvas-container');
+            if (!container || !renderer || !camera) return;
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+        }
+
+        function resetCameraView() {
+            targetVaultRot = { x: 0.08, y: -0.22 };
+        }
+
+        function update3DSafeScreenTexture(statusMode = 'normal') {
+            if (!safeScreenCtx || !safeScreenTexture) return;
+            const ctx = safeScreenCtx;
+            ctx.fillStyle = statusMode === 'error' ? '#450a0a' : (isVaultOpen ? '#064e3b' : '#022c22');
+            ctx.fillRect(0, 0, 512, 192);
+
+            ctx.strokeStyle = statusMode === 'error' ? '#ef4444' : '#10b981';
+            ctx.lineWidth = 6;
+            ctx.strokeRect(6, 6, 500, 180);
+
+            ctx.fillStyle = statusMode === 'error' ? '#fca5a5' : '#6ee7b7';
+            ctx.font = 'bold 26px "JetBrains Mono", monospace';
+            ctx.fillText(isVaultOpen ? 'OPEN / 解錠成功' : 'KINKO VAULT PIN', 26, 44);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 64px "JetBrains Mono", monospace';
+            const displayStr = safePinBuffer.length > 0 ? safePinBuffer : '----';
+            ctx.fillText(displayStr, 26, 122);
+
+            const jpInfo = formatPinJapanese(safePinBuffer);
+            ctx.fillStyle = '#fbbf24';
+            ctx.font = 'bold 28px "Noto Sans JP", sans-serif';
+            ctx.fillText(safePinBuffer.length > 0 ? jpInfo.kanji.split(' ')[0] : '漢数字入力待機', 26, 166);
+
+            safeScreenTexture.needsUpdate = true;
+        }
+
+        function setSafeLedColor(hexColor) {
+            if (!statusLedMesh || !statusPointLight) return;
+            statusLedMesh.material.color.setHex(hexColor);
+            statusLedMesh.material.emissive.setHex(hexColor);
+            statusPointLight.color.setHex(hexColor);
+        }
+
+        function animateThreeLoop() {
+            requestAnimationFrame(animateThreeLoop);
+            if (!renderer || !scene || !camera) return;
+
+            // Smooth vault rotation
+            currentVaultRot.x += (targetVaultRot.x - currentVaultRot.x) * 0.1;
+            currentVaultRot.y += (targetVaultRot.y - currentVaultRot.y) * 0.1;
+
+            let shakeOffset = 0;
+            if (shakeTimer > 0) {
+                shakeOffset = Math.sin(shakeTimer * 45) * 0.12;
+                shakeTimer -= 0.02;
+            }
+
+            if (vaultGroup) {
+                vaultGroup.rotation.x = currentVaultRot.x;
+                vaultGroup.rotation.y = currentVaultRot.y;
+                vaultGroup.position.x = shakeOffset;
+            }
+
+            // Smooth wheel & door animation
+            currentWheelAngle += (targetWheelAngle - currentWheelAngle) * 0.12;
+            if (wheelGroup) {
+                wheelGroup.rotation.z = currentWheelAngle;
+            }
+
+            currentDoorAngle += (targetDoorAngle - currentDoorAngle) * 0.08;
+            if (doorPivotGroup) {
+                doorPivotGroup.rotation.y = currentDoorAngle;
+            }
+
+            // Retract bolts when unlocked
+            lockingBolts.forEach(bolt => {
+                const targetX = isVaultOpen ? -2.35 : -2.58;
+                bolt.position.x += (targetX - bolt.position.x) * 0.15;
+            });
+
+            // Animate treasure sparkles when vault is open
+            if (treasureParticles && treasureParticles.system) {
+                const posAttr = treasureParticles.system.geometry.attributes.position;
+                for (let i = 0; i < treasureParticles.velocities.length; i++) {
+                    if (isVaultOpen) {
+                        let px = posAttr.getX(i) + treasureParticles.velocities[i].x;
+                        let py = posAttr.getY(i) + treasureParticles.velocities[i].y;
+                        let pz = posAttr.getZ(i) + treasureParticles.velocities[i].z;
+                        if (pz > 2.2 || Math.abs(px) > 1.8 || Math.abs(py) > 1.5) {
+                            px = (Math.random() - 0.5) * 1.2;
+                            py = (Math.random() - 0.5) * 1.0;
+                            pz = -0.3;
+                        }
+                        posAttr.setXYZ(i, px, py, pz);
+                    } else {
+                        posAttr.setXYZ(i, 0, -0.5, -0.5);
+                    }
+                }
+                posAttr.needsUpdate = true;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        /***********************************************************************
+         * 8. KEYPAD (1-9, 0, *, #) & JAPANESE CALCULATOR LOGIC
+         ***********************************************************************/
+        function setInputTarget(target) {
+            inputTarget = target;
+            const btnSafe = document.getElementById('target-btn-safe');
+            const btnCalc = document.getElementById('target-btn-calc');
+            if (target === 'safe') {
+                btnSafe.className = "px-2 py-0.5 rounded-md font-bold transition bg-emerald-500 text-slate-950";
+                btnCalc.className = "px-2 py-0.5 rounded-md font-bold transition text-slate-400 hover:text-white";
+            } else {
+                btnCalc.className = "px-2 py-0.5 rounded-md font-bold transition bg-blue-500 text-slate-950";
+                btnSafe.className = "px-2 py-0.5 rounded-md font-bold transition text-slate-400 hover:text-white";
+            }
+        }
+
+        function highlightKeyButton(key) {
+            const idMap = { '*': 'key-btn-star', '#': 'key-btn-hash' };
+            const btnId = idMap[key] || `key-btn-${key}`;
+            const el = document.getElementById(btnId);
+            if (!el) return;
+            el.classList.add('active-key');
+            setTimeout(() => el.classList.remove('active-key'), 120);
+        }
+
+        function pressKeypad(key) {
+            playDtmfTone(key);
+            highlightKeyButton(key);
+
+            // Spin safe wheel slightly on any key press for tactile feedback
+            targetWheelAngle -= 0.25;
+
+            if (key === '*') {
+                // Clear active buffer
+                if (inputTarget === 'calc') {
+                    clearCalculator();
+                } else {
+                    safePinBuffer = "";
+                    if (isVaultOpen) closeVaultDoor();
+                    updateSafePinUI();
+                }
+                return;
+            }
+
+            if (key === '#') {
+                // If user is in Calculator mode and has a pending calculation, solve and transfer to safe
+                if (inputTarget === 'calc' && safePinBuffer.length === 0 && calcCurrentInput !== "0") {
+                    if (calcPendingOp) pressCalcEquals();
+                    transferCalcToSafe();
+                }
+                attemptUnlockSafe();
+                return;
+            }
+
+            // Digit 0-9 pressed
+            if (inputTarget === 'calc') {
+                appendCalcDigit(key);
+            } else {
+                if (safePinBuffer.length < 8) {
+                    safePinBuffer += key;
+                    updateSafePinUI();
+                }
+            }
+        }
+
+        function backspaceSafePin() {
+            playCalcClick();
+            if (safePinBuffer.length > 0) {
+                safePinBuffer = safePinBuffer.slice(0, -1);
+                updateSafePinUI();
+            }
+        }
+
+        function updateSafePinUI() {
+            const stage = STAGES[currentStageIndex];
+            const expectedLen = stage ? stage.code.length : 4;
+            document.getElementById('safe-digit-len-hint').textContent = `${expectedLen} DIGITS + #`;
+
+            const pinEl = document.getElementById('safe-pin-display');
+            if (safePinBuffer.length === 0) {
+                pinEl.textContent = Array(expectedLen).fill('_').join(' ');
+            } else {
+                pinEl.textContent = safePinBuffer.split('').join(' ');
+            }
+
+            const jpInfo = formatPinJapanese(safePinBuffer);
+            document.getElementById('safe-pin-kanji').textContent = jpInfo.kanji;
+            document.getElementById('safe-pin-reading').textContent = jpInfo.reading;
+
+            if (!isVaultOpen) {
+                setSafeLedColor(safePinBuffer.length > 0 ? 0xf59e0b : 0xef4444);
+            }
+            update3DSafeScreenTexture();
+        }
+
+        function attemptUnlockSafe() {
+            const stage = STAGES[currentStageIndex];
+            const dict = I18N[currentLang];
+
+            if (safePinBuffer.length === 0) {
+                showToast(dict.toastEmpty, 'warn');
+                return;
+            }
+
+            if (safePinBuffer === stage.code) {
+                // Correct Code! Unlock 3D Vault
+                isVaultOpen = true;
+                solvedStages.add(stage.id);
+                targetWheelAngle -= Math.PI * 1.8;
+                targetDoorAngle = -Math.PI * 0.65;
+                setSafeLedColor(0x10b981);
+                playSafeUnlockSound();
+                update3DSafeScreenTexture('open');
+
+                // Status UI
+                const dot = document.getElementById('safe-status-dot');
+                dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
+                document.getElementById('ui-safe-status-text').textContent = dict.statusUnlocked;
+                document.getElementById('next-stage-banner').classList.remove('hidden');
+
+                updateStageTabsUI();
+                showToast(dict.toastUnlocked.replace('{code}', stage.code), 'success');
+            } else {
+                // Wrong Code! Shake safe & flash red
+                shakeTimer = 0.45;
+                setSafeLedColor(0xef4444);
+                playSafeErrorSound();
+                update3DSafeScreenTexture('error');
+
+                const dot = document.getElementById('safe-status-dot');
+                dot.className = "w-2.5 h-2.5 rounded-full bg-red-500 animate-ping";
+                document.getElementById('ui-safe-status-text').textContent = dict.statusError;
+
+                const lcd = document.querySelector('.lcd-screen');
+                lcd.classList.add('shake-error');
+                setTimeout(() => {
+                    lcd.classList.remove('shake-error');
+                    safePinBuffer = "";
+                    updateSafePinUI();
+                }, 650);
+
+                showToast(dict.toastWrong.replace('{input}', safePinBuffer), 'error');
+            }
+        }
+
+        function closeVaultDoor() {
+            isVaultOpen = false;
+            targetDoorAngle = 0;
+            setSafeLedColor(0xef4444);
+            const dict = I18N[currentLang];
+            document.getElementById('safe-status-dot').className = "w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse";
+            document.getElementById('ui-safe-status-text').textContent = dict.statusLocked;
+            document.getElementById('next-stage-banner').classList.add('hidden');
+            update3DSafeScreenTexture();
+        }
+
+        /***********************************************************************
+         * 9. JAPANESE CALCULATOR ENGINE (和算電卓)
+         ***********************************************************************/
+        function appendCalcDigit(digit) {
+            if (calcResetNext) {
+                calcCurrentInput = digit;
+                calcResetNext = false;
+            } else {
+                if (calcCurrentInput === "0") {
+                    calcCurrentInput = digit;
+                } else if (calcCurrentInput.length < 8) {
+                    calcCurrentInput += digit;
+                }
+            }
+            updateCalculatorUI();
+        }
+
+        function pressCalcOp(op) {
+            playCalcClick();
+            // Automatically switch keypad routing to Calculator when user clicks +, -, ×, ÷
+            setInputTarget('calc');
+
+            const currentVal = parseFloat(calcCurrentInput);
+            if (calcPreviousValue !== null && !calcResetNext) {
+                computeIntermediate();
+            } else {
+                calcPreviousValue = currentVal;
+            }
+            calcPendingOp = op;
+            calcResetNext = true;
+            updateCalculatorUI();
+        }
+
+        function computeIntermediate() {
+            if (calcPendingOp === null || calcPreviousValue === null) return;
+            const cur = parseFloat(calcCurrentInput);
+            let res = calcPreviousValue;
+            if (calcPendingOp === '+') res = calcPreviousValue + cur;
+            else if (calcPendingOp === '-') res = calcPreviousValue - cur;
+            else if (calcPendingOp === '*') res = calcPreviousValue * cur;
+            else if (calcPendingOp === '/') res = cur !== 0 ? Math.floor(calcPreviousValue / cur) : 0;
+
+            res = Math.round(res);
+            calcCurrentInput = String(res);
+            calcPreviousValue = res;
+        }
+
+        function pressCalcEquals() {
+            playCalcClick();
+            if (calcPendingOp !== null && calcPreviousValue !== null) {
+                const prevJp = numberToJapaneseFull(calcPreviousValue).kanji;
+                const curJp = numberToJapaneseFull(parseFloat(calcCurrentInput)).kanji;
+                const opMapJp = { '+': '足す', '-': '引く', '*': '掛ける', '/': '割る' };
+                const opSym = { '+': '+', '-': '−', '*': '×', '/': '÷' }[calcPendingOp];
+                const prevNum = calcPreviousValue;
+                const curNum = parseFloat(calcCurrentInput);
+
+                computeIntermediate();
+
+                const ansJp = numberToJapaneseFull(parseFloat(calcCurrentInput)).kanji;
+                calcExpressionLog = `${prevNum} ${opSym} ${curNum} =`;
+                document.getElementById('calc-jp-formula').textContent = `${prevJp} ${opMapJp[calcPendingOp]} ${curJp} ＝ ${ansJp}`;
+
+                calcPendingOp = null;
+                calcPreviousValue = null;
+                calcResetNext = true;
+                updateCalculatorUI(true);
+            }
+        }
+
+        function clearCalculator() {
+            playCalcClick();
+            calcCurrentInput = "0";
+            calcPreviousValue = null;
+            calcPendingOp = null;
+            calcResetNext = false;
+            calcExpressionLog = "";
+            updateCalculatorUI();
+        }
+
+        function updateCalculatorUI(keepFormulaText = false) {
+            const numVal = parseFloat(calcCurrentInput) || 0;
+            const jpFull = numberToJapaneseFull(numVal);
+
+            document.getElementById('calc-main-value').textContent = calcCurrentInput;
+
+            if (!keepFormulaText) {
+                if (calcPendingOp && calcPreviousValue !== null) {
+                    const prevJp = numberToJapaneseFull(calcPreviousValue).kanji;
+                    const opMapJp = { '+': '足す (+)', '-': '引く (−)', '*': '掛ける (×)', '/': '割る (÷)' };
+                    const curJp = calcResetNext ? '?' : jpFull.kanji;
+                    document.getElementById('calc-jp-formula').textContent = `${prevJp} ${opMapJp[calcPendingOp]} ${curJp}`;
+                    document.getElementById('calc-arabic-expr').textContent = `${calcPreviousValue} ${calcPendingOp} ${calcResetNext ? '' : calcCurrentInput}`;
+                } else {
+                    document.getElementById('calc-jp-formula').textContent = `${jpFull.kanji} (${jpFull.kana})`;
+                    document.getElementById('calc-arabic-expr').textContent = calcExpressionLog;
+                }
+            } else {
+                document.getElementById('calc-arabic-expr').textContent = calcExpressionLog;
+            }
+
+            document.getElementById('calc-pos-kanji').textContent = `${jpFull.kanji} (大字: ${jpFull.daiji})`;
+            document.getElementById('calc-kana-reading').textContent = `${jpFull.kana} (${jpFull.ko})`;
+        }
+
+        function transferCalcToSafe() {
+            playCalcClick();
+            if (calcPendingOp !== null) {
+                pressCalcEquals();
+            }
+            const cleanDigits = String(Math.abs(Math.round(parseFloat(calcCurrentInput) || 0)));
+            safePinBuffer = cleanDigits;
+            setInputTarget('safe');
+            updateSafePinUI();
+            const dict = I18N[currentLang];
+            showToast(dict.toastTransferred.replace('{val}', cleanDigits), 'info');
+        }
+
+        function loadMemoIntoCalculator() {
+            const stage = STAGES[currentStageIndex];
+            if (!stage || !stage.calcAuto) return;
+            playCalcClick();
+            calcCurrentInput = String(stage.calcAuto.result);
+            calcPreviousValue = null;
+            calcPendingOp = null;
+            calcResetNext = true;
+            calcExpressionLog = stage.calcAuto.expr + " =";
+            document.getElementById('calc-jp-formula').textContent = stage.calcAuto.jpText;
+            updateCalculatorUI(true);
+            showToast(I18N[currentLang].toastFormulaLoaded, 'info');
+        }
+
+        /***********************************************************************
+         * 10. STAGE MANAGEMENT, MEMO RENDERER & UI TRANSLATION
+         ***********************************************************************/
+        function selectStage(index) {
+            playCalcClick();
+            currentStageIndex = index;
+
+            // If stage 6 (Infinite mode) is selected and has placeholder "0000", generate a fresh puzzle
+            if (STAGES[currentStageIndex].id === 6 && STAGES[currentStageIndex].code === "0000") {
+                const randPuz = generateRandomPuzzle();
+                Object.assign(STAGES[currentStageIndex], randPuz);
+            }
+
+            safePinBuffer = "";
+            closeVaultDoor();
+            document.getElementById('hint-box').classList.add('hidden');
+            renderCurrentStage();
+            updateSafePinUI();
+            updateStageTabsUI();
+        }
+
+        function goToNextStage() {
+            if (currentStageIndex < STAGES.length - 1) {
+                selectStage(currentStageIndex + 1);
+            } else {
+                rerollCurrentStage();
+            }
+        }
+
+        function rerollCurrentStage() {
+            playCalcClick();
+            const modeOrder = ['kanji', 'math', 'daiji', 'goroawase', 'math', null];
+            const chosenMode = modeOrder[currentStageIndex] || null;
+            const randPuz = generateRandomPuzzle(chosenMode);
+            Object.assign(STAGES[currentStageIndex], randPuz);
+            safePinBuffer = "";
+            closeVaultDoor();
+            renderCurrentStage();
+            updateSafePinUI();
+        }
+
+        function updateStageTabsUI() {
+            const container = document.getElementById('stage-tabs-container');
+            container.innerHTML = '';
+
+            STAGES.forEach((st, idx) => {
+                const isCurrent = idx === currentStageIndex;
+                const isSolved = solvedStages.has(st.id);
+                const btn = document.createElement('button');
+                btn.onclick = () => selectStage(idx);
+
+                let cls = "px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap border ";
+                if (isCurrent) {
+                    cls += "bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20";
+                } else if (isSolved) {
+                    cls += "bg-emerald-950/60 text-emerald-300 border-emerald-500/40 hover:bg-emerald-900/60";
+                } else {
+                    cls += "bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-700";
+                }
+                btn.className = cls;
+
+                const iconHtml = isSolved
+                    ? `<i class="fa-solid fa-circle-check ${isCurrent ? 'text-slate-950' : 'text-emerald-400'}"></i>`
+                    : `<i class="fa-solid fa-lock text-[10px] opacity-75"></i>`;
+
+                btn.innerHTML = `${iconHtml} <span>${st.tabTitle[currentLang]}</span>`;
+                container.appendChild(btn);
+            });
+
+            const solvedStandardCount = [...solvedStages].filter(id => id <= 5).length;
+            document.getElementById('ui-solved-count').textContent = `${solvedStandardCount} / 5`;
+        }
+
+        function renderCurrentStage() {
+            const stage = STAGES[currentStageIndex];
+            const dict = I18N[currentLang];
+
+            document.getElementById('memo-stage-badge').textContent = stage.id === 6 ? "INFINITE VAULT" : `STAGE ${stage.id}`;
+            document.getElementById('memo-title').textContent = stage.title[currentLang];
+            document.getElementById('memo-story').textContent = stage.story[currentLang];
+            document.getElementById('hint-text').textContent = stage.hint[currentLang];
+
+            // Show/hide auto-load calculator button in hint box
+            const btnAutoCalc = document.getElementById('btn-auto-calc');
+            if (stage.calcAuto) {
+                btnAutoCalc.classList.remove('hidden');
+            } else {
+                btnAutoCalc.classList.add('hidden');
+            }
+
+            // Render interactive memo tokens
+            const cipherBox = document.getElementById('memo-cipher-content');
+            cipherBox.innerHTML = '';
+
+            stage.tokens.forEach((tok) => {
+                if (!tok.badge && tok.surface === '・') {
+                    const sep = document.createElement('span');
+                    sep.className = "mx-1 text-amber-800/50";
+                    sep.textContent = tok.surface;
+                    cipherBox.appendChild(sep);
+                    return;
+                }
+
+                const span = document.createElement('span');
+                span.className = "memo-token";
+                if (showFurigana && tok.ruby) {
+                    span.innerHTML = `<ruby>${tok.surface}<rt>${tok.ruby}</rt></ruby>`;
+                } else {
+                    span.textContent = tok.surface;
+                }
+
+                span.onclick = () => {
+                    playCalcClick();
+                    document.getElementById('token-inspector-text').textContent = `${tok.surface}: ${tok.meaning[currentLang]}`;
+                    const badgeEl = document.getElementById('token-inspector-badge');
+                    if (tok.badge) {
+                        badgeEl.textContent = tok.badge;
+                        badgeEl.classList.remove('hidden');
+                    } else {
+                        badgeEl.classList.add('hidden');
+                    }
+                };
+                cipherBox.appendChild(span);
+            });
+
+            // Reset token inspector prompt
+            document.getElementById('token-inspector-text').textContent = dict.inspectorDefault;
+            document.getElementById('token-inspector-badge').classList.add('hidden');
+        }
+
+        function toggleFurigana() {
+            playCalcClick();
+            showFurigana = !showFurigana;
+            const dict = I18N[currentLang];
+            document.getElementById('ui-btn-furigana').textContent = showFurigana ? dict.furiganaOn : dict.furiganaOff;
+            renderCurrentStage();
+        }
+
+        function toggleHintBox() {
+            playCalcClick();
+            const box = document.getElementById('hint-box');
+            box.classList.toggle('hidden');
+        }
+
+        function toggleReferenceModal(show) {
+            playCalcClick();
+            const modal = document.getElementById('reference-modal');
+            if (show) modal.classList.remove('hidden');
+            else modal.classList.add('hidden');
+        }
+
+        function setLanguage(lang) {
+            playCalcClick();
+            currentLang = lang;
+            const dict = I18N[lang];
+
+            // Highlight active language button
+            ['ko', 'ja', 'en'].forEach(l => {
+                const btn = document.getElementById(`lang-btn-${l}`);
+                if (l === lang) {
+                    btn.className = "px-2.5 py-1 rounded-lg text-xs font-bold transition bg-amber-500 text-slate-950";
+                } else {
+                    btn.className = "px-2.5 py-1 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white";
+                }
+            });
+
+            // Update static UI strings
+            document.getElementById('ui-app-title').textContent = dict.appTitle;
+            document.getElementById('ui-app-subtitle').textContent = dict.appSubtitle;
+            document.getElementById('ui-btn-dict').textContent = dict.btnDict;
+            document.getElementById('ui-score-label').textContent = dict.scoreLabel;
+            document.getElementById('ui-safe-status-text').textContent = isVaultOpen ? dict.statusUnlocked : dict.statusLocked;
+            document.getElementById('ui-btn-tts').textContent = dict.btnTts;
+            document.getElementById('ui-camera-hint').innerHTML = `<i class="fa-solid fa-hand-pointer text-amber-400"></i> ${dict.cameraHint}`;
+            document.getElementById('ui-unlocked-congrats').textContent = dict.unlockedCongrats;
+            document.getElementById('ui-btn-next-stage').textContent = dict.btnNextStage;
+            document.getElementById('ui-btn-furigana').textContent = showFurigana ? dict.furiganaOn : dict.furiganaOff;
+            document.getElementById('ui-btn-hint').textContent = dict.btnHint;
+            document.getElementById('ui-btn-reroll').textContent = dict.btnReroll;
+            document.getElementById('ui-memo-paper-label').textContent = dict.memoPaperLabel;
+            document.getElementById('ui-hint-title').textContent = dict.hintTitle;
+            document.getElementById('ui-btn-load-calc').textContent = dict.btnLoadCalc;
+            document.getElementById('ui-safe-screen-title').textContent = dict.safeScreenTitle;
+            document.getElementById('ui-safe-kanji-label').textContent = dict.safeKanjiLabel;
+            document.getElementById('ui-safe-reading-label').textContent = dict.safeReadingLabel;
+            document.getElementById('ui-calc-title').textContent = dict.calcTitle;
+            document.getElementById('ui-mode-safe').textContent = dict.modeSafe;
+            document.getElementById('ui-mode-calc').textContent = dict.modeCalc;
+            document.getElementById('ui-calc-pos-label').textContent = dict.calcPosLabel;
+            document.getElementById('ui-calc-kana-label').textContent = dict.calcKanaLabel;
+            document.getElementById('ui-op-add').textContent = dict.opAdd;
+            document.getElementById('ui-op-sub').textContent = dict.opSub;
+            document.getElementById('ui-op-mul').textContent = dict.opMul;
+            document.getElementById('ui-op-div').textContent = dict.opDiv;
+            document.getElementById('ui-op-eq').textContent = dict.opEq;
+            document.getElementById('ui-op-ac').textContent = dict.opAc;
+            document.getElementById('ui-btn-transfer').textContent = dict.btnTransfer;
+            document.getElementById('ui-kbd-num').textContent = dict.kbdNum;
+            document.getElementById('ui-kbd-clr').textContent = dict.kbdClr;
+            document.getElementById('ui-kbd-open').textContent = dict.kbdOpen;
+            document.getElementById('ui-modal-title').textContent = dict.modalTitle;
+
+            // Update keypad sub-labels
+            ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'star', 'hash'].forEach(k => {
+                const subEl = document.getElementById(`key-sub-${k}`);
+                if (subEl && dict.keySub[k]) subEl.textContent = dict.keySub[k];
+            });
+
+            updateStageTabsUI();
+            renderCurrentStage();
+        }
+
+        /***********************************************************************
+         * 11. TOAST NOTIFICATION & KEYBOARD LISTENERS
+         ***********************************************************************/
+        let toastTimeout = null;
+        function showToast(message, type = 'info') {
+            const box = document.getElementById('toast-box');
+            const inner = document.getElementById('toast-inner');
+            const icon = document.getElementById('toast-icon');
+            const text = document.getElementById('toast-text');
+
+            text.textContent = message;
+            if (type === 'success') {
+                inner.className = "px-4 py-2.5 rounded-xl bg-emerald-950/95 border border-emerald-400 text-emerald-100 text-xs sm:text-sm font-bold shadow-2xl flex items-center gap-2";
+                icon.className = "fa-solid fa-unlock-keyhole text-emerald-400";
+            } else if (type === 'error') {
+                inner.className = "px-4 py-2.5 rounded-xl bg-rose-950/95 border border-rose-500 text-rose-100 text-xs sm:text-sm font-bold shadow-2xl flex items-center gap-2";
+                icon.className = "fa-solid fa-triangle-exclamation text-rose-400";
+            } else {
+                inner.className = "px-4 py-2.5 rounded-xl bg-slate-900/95 border border-amber-500/60 text-white text-xs sm:text-sm font-bold shadow-2xl flex items-center gap-2";
+                icon.className = "fa-solid fa-circle-info text-amber-400";
+            }
+
+            box.classList.remove('opacity-0', 'translate-y-4');
+            box.classList.add('opacity-100', 'translate-y-0');
+
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                box.classList.remove('opacity-100', 'translate-y-0');
+                box.classList.add('opacity-0', 'translate-y-4');
+            }, 3100);
+        }
+
+        // Physical Keyboard Support
+        window.addEventListener('keydown', (e) => {
+            // Ignore if modal is open and Escape is pressed
+            if (e.key === 'Escape') {
+                toggleReferenceModal(false);
+                return;
+            }
+            if (e.key >= '0' && e.key <= '9') {
+                e.preventDefault();
+                pressKeypad(e.key);
+            } else if (e.key === '*') {
+                e.preventDefault();
+                pressKeypad('*');
+            } else if (e.key === '#' || e.key === 'Enter') {
+                e.preventDefault();
+                pressKeypad('#');
+            } else if (e.key === 'Backspace') {
+                e.preventDefault();
+                if (inputTarget === 'calc') {
+                    clearCalculator();
+                } else {
+                    backspaceSafePin();
+                }
+            } else if (e.key === '+') {
+                e.preventDefault();
+                pressCalcOp('+');
+            } else if (e.key === '-') {
+                e.preventDefault();
+                pressCalcOp('-');
+            } else if (e.key === '/') {
+                e.preventDefault();
+                pressCalcOp('/');
+            } else if (e.key === '=') {
+                e.preventDefault();
+                pressCalcEquals();
+            }
+        });
+
+        /***********************************************************************
+         * 12. INITIALIZATION ON WINDOW LOAD
+         ***********************************************************************/
+        window.onload = function () {
+            initThreeVault();
+            animateThreeLoop();
+            setLanguage('ko');
+            selectStage(0);
+            updateCalculatorUI();
+        };
+    </script>
+</body>
+</html>
